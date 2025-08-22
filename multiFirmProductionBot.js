@@ -251,37 +251,60 @@ Selecciona una prop firm para hacer preguntas específicas:
         let searchResults = [];
 
         if (firmSlug && this.firms[firmSlug]) {
-            // Search specific firm with improved keyword search
+            // BULLETPROOF SEARCH for specific firm
             const firmId = this.firms[firmSlug].id;
             
-            // Extract keywords from question (remove stop words)
+            // Strategy 1: Try multiple search approaches
             const keywords = this.extractKeywords(question);
-            const searchTerms = keywords.length > 0 ? keywords.join('%') : question;
             
-            const { data } = await this.supabase
-                .from('faqs')
-                .select('question, answer_md, slug')
-                .eq('firm_id', firmId)
-                .or(`question.ilike.%${searchTerms}%,answer_md.ilike.%${searchTerms}%`)
-                .limit(5);
+            // Method 1: Individual keyword search (most reliable)
+            for (const keyword of keywords) {
+                if (searchResults.length >= 5) break;
+                
+                const { data: keywordData } = await this.supabase
+                    .from('faqs')
+                    .select('question, answer_md, slug')
+                    .eq('firm_id', firmId)
+                    .or(`question.ilike.%${keyword}%,answer_md.ilike.%${keyword}%`)
+                    .limit(3);
+                
+                if (keywordData && keywordData.length > 0) {
+                    // Avoid duplicates
+                    const newResults = keywordData.filter(newFaq => 
+                        !searchResults.some(existing => existing.slug === newFaq.slug)
+                    );
+                    searchResults = [...searchResults, ...newResults];
+                }
+            }
             
-            searchResults = data || [];
-            
-            // If no results with keywords, try individual words
-            if (searchResults.length === 0 && keywords.length > 1) {
-                for (const keyword of keywords) {
-                    const { data: keywordData } = await this.supabase
+            // Method 2: If still no results, try broader terms
+            if (searchResults.length === 0) {
+                const broadTerms = ['cuenta', 'plan', 'precio', 'costo', 'evaluacion'];
+                
+                for (const term of broadTerms) {
+                    const { data: broadData } = await this.supabase
                         .from('faqs')
                         .select('question, answer_md, slug')
                         .eq('firm_id', firmId)
-                        .or(`question.ilike.%${keyword}%,answer_md.ilike.%${keyword}%`)
-                        .limit(3);
+                        .or(`question.ilike.%${term}%,answer_md.ilike.%${term}%`)
+                        .limit(2);
                     
-                    if (keywordData && keywordData.length > 0) {
-                        searchResults = [...searchResults, ...keywordData];
-                        if (searchResults.length >= 5) break;
+                    if (broadData && broadData.length > 0) {
+                        searchResults = [...searchResults, ...broadData];
+                        break; // Found something, stop searching
                     }
                 }
+            }
+            
+            // Method 3: Last resort - get any FAQs from this firm
+            if (searchResults.length === 0) {
+                const { data: anyData } = await this.supabase
+                    .from('faqs')
+                    .select('question, answer_md, slug')
+                    .eq('firm_id', firmId)
+                    .limit(3);
+                
+                searchResults = anyData || [];
             }
         } else {
             // Search all firms with improved keyword search
