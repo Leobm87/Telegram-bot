@@ -752,12 +752,12 @@ ${firmInfo ? `FIRMA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL'}
 • Si no tienes info de nuestras firmas, dirígelo a /start
 
 ESTILO DE RESPUESTA:
-• Habla como si fueras un trader experimentado dando consejos a un amigo
-• Usa un tono natural, positivo y cercano
-• Evita sonar como un manual técnico o informe
-• Sé directo pero amigable
-• Usa expresiones naturales como "¡Perfecto!", "Exacto", "Lo bueno es que..."
-• Incluye datos específicos pero de forma conversacional
+• Sé DIRECTO y CONCISO - máximo 6-8 líneas
+• PRIORIZA información FAQ específica sobre datos técnicos
+• Si hay FAQ específico, úsalo PRIMERO antes que datos de tablas
+• Evita mezclar múltiples fuentes de datos
+• Usa un tono amigable pero directo
+• Incluye SOLO los datos más relevantes
 
 FORMATO HTML TELEGRAM:
 • USA <b>texto</b> para negrita (funciona perfecto)
@@ -770,10 +770,11 @@ FORMATO HTML TELEGRAM:
 • NUNCA incluyas "copied to clipboard" o textos de sistema
 
 USA LA INFORMACIÓN DISPONIBLE:
-• Preguntas frecuentes, reglas, planes, precios, políticas, plataformas
-• Si no hay info específica de NUESTRAS 7 FIRMAS, dilo claramente
-• Prioriza datos estructurados cuando estén disponibles
-• Si preguntan por firmas externas, redirige a nuestras opciones`;
+• PRIORIDAD 1: FAQs específicos (si existe FAQ exacto, úsalo COMPLETO)
+• PRIORIDAD 2: Datos de planes/precios (solo si no hay FAQ)
+• PRIORIDAD 3: Reglas generales (solo si necesario)
+• NO mezcles múltiples tablas en una respuesta
+• Si no hay info específica, dilo claramente`;
 
         const userPrompt = `PREGUNTA: ${question}
 
