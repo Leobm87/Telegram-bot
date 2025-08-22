@@ -15,10 +15,11 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.json({
         status: 'ElTrader Bot ONLINE',
-        version: '3.1.0',
+        version: '3.2.0',
         uptime: Math.round(process.uptime()),
         firms: 7,
-        features: 'Conversational Style + Telegram Optimized'
+        bot_status: bot ? 'active' : 'initializing',
+        features: 'No External Competition + HTML Perfect + Clean Commands'
     });
 });
 
@@ -59,8 +60,26 @@ app.listen(PORT, () => {
     startBot();
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => process.exit(0));
-process.on('SIGINT', () => process.exit(0));
+// Graceful shutdown with bot cleanup
+process.on('SIGTERM', () => {
+    console.log('📚 SIGTERM received, shutting down gracefully...');
+    if (bot && bot.bot) {
+        bot.bot.stopPolling();
+    }
+    setTimeout(() => process.exit(0), 2000);
+});
+
+process.on('SIGINT', () => {
+    console.log('📚 SIGINT received, shutting down gracefully...');
+    if (bot && bot.bot) {
+        bot.bot.stopPolling();
+    }
+    setTimeout(() => process.exit(0), 2000);
+});
+
+// Keep alive ping for Railway
+setInterval(() => {
+    console.log('🔄 Keepalive ping - Bot status:', bot ? 'running' : 'stopped');
+}, 300000); // Every 5 minutes
 
 module.exports = app;
