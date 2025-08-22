@@ -226,6 +226,17 @@ Selecciona una prop firm para hacer preguntas específicas:
         return null; // General question
     }
 
+    extractKeywords(question) {
+        // Remove stop words and extract meaningful keywords
+        const stopWords = ['que', 'como', 'cual', 'donde', 'cuando', 'quien', 'por', 'para', 'de', 'del', 'la', 'el', 'en', 'con', 'sin', 'sobre', 'tiene', 'hay', 'es', 'son', 'esta', 'esta', 'un', 'una', 'y', 'o', 'pero', 'si', 'no'];
+        
+        return question
+            .toLowerCase()
+            .split(/\s+/)
+            .filter(word => word.length > 2 && !stopWords.includes(word))
+            .slice(0, 3); // Limit to top 3 keywords
+    }
+
     async searchAndGenerateResponse(question, firmSlug = null) {
         const cacheKey = `response_${firmSlug || 'general'}_${question.slice(0, 50)}`;
         
@@ -240,22 +251,47 @@ Selecciona una prop firm para hacer preguntas específicas:
         let searchResults = [];
 
         if (firmSlug && this.firms[firmSlug]) {
-            // Search specific firm
+            // Search specific firm with improved keyword search
             const firmId = this.firms[firmSlug].id;
+            
+            // Extract keywords from question (remove stop words)
+            const keywords = this.extractKeywords(question);
+            const searchTerms = keywords.length > 0 ? keywords.join('%') : question;
+            
             const { data } = await this.supabase
                 .from('faqs')
                 .select('question, answer_md, slug')
                 .eq('firm_id', firmId)
-                .or(`question.ilike.%${question}%,answer_md.ilike.%${question}%`)
+                .or(`question.ilike.%${searchTerms}%,answer_md.ilike.%${searchTerms}%`)
                 .limit(5);
             
             searchResults = data || [];
+            
+            // If no results with keywords, try individual words
+            if (searchResults.length === 0 && keywords.length > 1) {
+                for (const keyword of keywords) {
+                    const { data: keywordData } = await this.supabase
+                        .from('faqs')
+                        .select('question, answer_md, slug')
+                        .eq('firm_id', firmId)
+                        .or(`question.ilike.%${keyword}%,answer_md.ilike.%${keyword}%`)
+                        .limit(3);
+                    
+                    if (keywordData && keywordData.length > 0) {
+                        searchResults = [...searchResults, ...keywordData];
+                        if (searchResults.length >= 5) break;
+                    }
+                }
+            }
         } else {
-            // Search all firms
+            // Search all firms with improved keyword search
+            const keywords = this.extractKeywords(question);
+            const searchTerms = keywords.length > 0 ? keywords.join('%') : question;
+            
             const { data } = await this.supabase
                 .from('faqs')
                 .select('question, answer_md, slug, firm_id')
-                .or(`question.ilike.%${question}%,answer_md.ilike.%${question}%`)
+                .or(`question.ilike.%${searchTerms}%,answer_md.ilike.%${searchTerms}%`)
                 .limit(8);
             
             searchResults = data || [];
