@@ -255,9 +255,11 @@ Selecciona una prop firm para hacer preguntas específicas:
             const firmId = this.firms[firmSlug].id;
             
             // Strategy 1: Try multiple search approaches
+            console.log("🔍 SEARCH DEBUG - Firm ID:", firmId);
             const keywords = this.extractKeywords(question);
             
             // Method 1: Individual keyword search (most reliable)
+            console.log("🔍 SEARCH DEBUG - Keywords:", keywords);
             for (const keyword of keywords) {
                 if (searchResults.length >= 5) break;
                 
@@ -333,14 +335,14 @@ Selecciona una prop firm para hacer preguntas específicas:
     }
 
     async generateAIResponse(question, searchResults, firmSlug) {
+        const firmInfo = firmSlug ? this.firms[firmSlug] : null;
+        
+        const context = searchResults.map(faq => 
         // DEBUG LOGGING for Railway
         console.log("🔍 DEBUG - generateAIResponse called");
         console.log("Question:", question);
         console.log("Firm:", firmSlug || "general");
         console.log("Search results count:", searchResults?.length || 0);
-        const firmInfo = firmSlug ? this.firms[firmSlug] : null;
-        
-        const context = searchResults.map(faq => 
             `Q: ${faq.question}\nA: ${faq.answer_md}`
         ).join('\n\n');
 
