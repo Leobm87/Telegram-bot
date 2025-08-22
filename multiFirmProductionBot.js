@@ -152,24 +152,25 @@ class MultiFirmProductionBot {
             ]
         };
 
-        const message = `🚀 ElTrader Financiado - Bot Multi-Firma v3.1
+        const message = `🚀 <b>ElTrader Financiado</b> - Bot Multi-Firma v3.1
 
 Selecciona una prop firm para hacer preguntas específicas:
 
-📊 Cobertura COMPLETA (7 Firmas + 7 Tablas DB):
+📊 <b>Cobertura COMPLETA (7 Firmas + 7 Tablas DB):</b>
 🟠 Apex | 🟢 TakeProfit | 🔵 Bulenox | 🟡 MFF
 🔴 Alpha | ⚪ Tradeify | 🟣 Vision Trade
 
-🔥 NUEVA v3.1 - Estilo Conversacional:
+🔥 <b>NUEVA v3.1 - Formato HTML Perfecto:</b>
 ✅ FAQs + Reglas Trading + Planes/Precios
 ✅ Políticas Pago + Plataformas + Feeds Datos
-✅ 95%+ Accuracy + Formato Mobile Optimizado
+✅ 95%+ Accuracy + <i>Formato Mobile Optimizado</i>
 
-💡 Escribe tu pregunta directamente - El bot detectará automáticamente la firma y buscará en TODA la base de datos.
+💡 <b>Escribe tu pregunta directamente</b> - El bot detectará automáticamente la firma y buscará en TODA la base de datos.
 
-🚂 Railway Production Optimized`;
+🚂 <code>Railway Production Optimized</code>`;
 
         await this.bot.sendMessage(chatId, message, {
+            parse_mode: 'HTML',
             reply_markup: keyboard
         });
     }
@@ -185,7 +186,8 @@ Selecciona una prop firm para hacer preguntas específicas:
             if (firm) {
                 await this.bot.answerCallbackQuery(callbackQuery.id);
                 await this.bot.sendMessage(chatId, 
-                    `${firm.color} ${firm.name} seleccionado.\n\n¿Qué quieres saber sobre ${firm.name}? Escribe tu pregunta.`
+                    `${firm.color} <b>${firm.name}</b> seleccionado.\n\n¿Qué quieres saber sobre ${firm.name}? Escribe tu pregunta.`,
+                    { parse_mode: 'HTML' }
                 );
                 
                 // Store selected firm in user context (simplified for Railway)
@@ -194,7 +196,8 @@ Selecciona una prop firm para hacer preguntas específicas:
         } else if (data === 'general_question') {
             await this.bot.answerCallbackQuery(callbackQuery.id);
             await this.bot.sendMessage(chatId, 
-                '❓ Pregunta General\n\nEscribe tu pregunta y analizaré todas las firmas para darte la mejor respuesta.'
+                '❓ <b>Pregunta General</b>\n\nEscribe tu pregunta y analizaré todas las firmas para darte la mejor respuesta.',
+                { parse_mode: 'HTML' }
             );
         }
     }
@@ -218,6 +221,7 @@ Selecciona una prop firm para hacer preguntas específicas:
             const response = await this.searchAndGenerateResponse(question, selectedFirm);
             
             await this.bot.sendMessage(chatId, response, { 
+                parse_mode: 'HTML',
                 disable_web_page_preview: true 
             });
 
@@ -469,12 +473,14 @@ ESTILO DE RESPUESTA:
 • Usa expresiones naturales como "¡Perfecto!", "Exacto", "Lo bueno es que..."
 • Incluye datos específicos pero de forma conversacional
 
-FORMATO TELEGRAM:
-• NO uses **bold** (no funciona en Telegram)
-• NO uses ### headers
-• USA solo emojis y bullets simples (•)
+FORMATO HTML TELEGRAM:
+• USA <b>texto</b> para negrita (funciona perfecto)
+• USA <i>texto</i> para cursiva si necesario
+• USA <code>texto</code> para datos importantes (precios, porcentajes)
+• USA emojis y bullets simples (•)
 • Máximo 280 caracteres para mejor lectura mobile
 • Párrafos cortos separados por líneas en blanco
+• NUNCA uses **markdown** - solo HTML tags
 
 USA LA INFORMACIÓN DISPONIBLE:
 • Preguntas frecuentes, reglas, planes, precios, políticas, plataformas
@@ -503,7 +509,7 @@ Responde utilizando toda la información relevante disponible.`;
             
             // Add firm identifier if specific firm
             if (firmInfo) {
-                response = `${firmInfo.color} ${firmInfo.name}\n\n${response}`;
+                response = `${firmInfo.color} <b>${firmInfo.name}</b>\n\n${response}`;
             }
 
             // Add "ask another question" prompt
