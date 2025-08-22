@@ -205,6 +205,9 @@ Selecciona una prop firm para hacer preguntas específicas:
     async handleQuestion(msg) {
         const chatId = msg.chat.id;
         const question = msg.text;
+        const timestamp = new Date().toISOString();
+        const userId = msg.from?.id;
+        const username = msg.from?.username || 'unknown';
 
         try {
             // Get selected firm or detect from question
@@ -222,8 +225,35 @@ Selecciona una prop firm para hacer preguntas específicas:
                 disable_web_page_preview: true 
             });
 
+            // 📊 LOG INTERACTION FOR ANALYTICS & IMPROVEMENT
+            await this.logInteraction({
+                timestamp,
+                chatId,
+                userId,
+                username,
+                question: question.substring(0, 500), // Limit length
+                selectedFirm: selectedFirm || 'general',
+                responseLength: response.length,
+                success: true,
+                version: '3.0.0'
+            });
+
         } catch (error) {
             console.error('❌ Error handling question:', error.message);
+            
+            // 📊 LOG ERROR INTERACTION
+            await this.logInteraction({
+                timestamp,
+                chatId,
+                userId,
+                username,
+                question: question.substring(0, 500),
+                selectedFirm: selectedFirm || 'general',
+                success: false,
+                error: error.message,
+                version: '3.0.0'
+            });
+            
             await this.bot.sendMessage(chatId, 
                 '❌ Disculpa, hubo un error procesando tu pregunta. Por favor intenta de nuevo.'
             );
@@ -498,6 +528,54 @@ Responde utilizando toda la información relevante disponible.`;
         // Convert legacy format to comprehensive format
         const comprehensiveData = { faqs: searchResults };
         return this.generateEnhancedAIResponse(question, comprehensiveData, firmSlug);
+    }
+
+    // 📊 INTERACTION LOGGING FOR ANALYTICS & IMPROVEMENT
+    async logInteraction(interactionData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('bot_interactions')
+                .insert([{
+                    timestamp: interactionData.timestamp,
+                    chat_id: interactionData.chatId.toString(),
+                    user_id: interactionData.userId?.toString(),
+                    username: interactionData.username,
+                    question: interactionData.question,
+                    selected_firm: interactionData.selectedFirm,
+                    response_length: interactionData.responseLength,
+                    success: interactionData.success,
+                    error_message: interactionData.error || null,
+                    bot_version: interactionData.version,
+                    created_at: new Date().toISOString()
+                }]);
+
+            if (error) {
+                if (error.message.includes('does not exist')) {
+                    // Table doesn't exist yet - log to console for now
+                    console.log('📊 INTERACTION LOG:', JSON.stringify({
+                        time: interactionData.timestamp,
+                        user: interactionData.username,
+                        firm: interactionData.selectedFirm,
+                        question: interactionData.question.substring(0, 100) + '...',
+                        success: interactionData.success,
+                        error: interactionData.error
+                    }));
+                } else {
+                    console.error('⚠️ Failed to log interaction:', error.message);
+                }
+            } else {
+                console.log('✅ Interaction logged to database');
+            }
+        } catch (error) {
+            // Fallback to console logging
+            console.log('📊 INTERACTION LOG (fallback):', JSON.stringify({
+                time: interactionData.timestamp,
+                user: interactionData.username,
+                firm: interactionData.selectedFirm,
+                question: interactionData.question.substring(0, 100) + '...',
+                success: interactionData.success
+            }));
+        }
     }
 
     // Health check method for Railway
