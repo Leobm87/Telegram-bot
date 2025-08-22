@@ -97,17 +97,54 @@ class MultiFirmProductionBot {
             }
         };
 
-        this.setupEventHandlers();
-        console.log('🚀 Railway Bot v3.0 initialized - COMPREHENSIVE SEARCH ENABLED');
-        console.log('🔥 Features: 7-table search, enhanced AI context, structured data');
+        this.initializeBot();
+    }
+
+    async initializeBot() {
+        await this.setupEventHandlers();
+        console.log('🚀 Railway Bot v3.1 initialized - HTML FORMAT + CLEAN COMMANDS');
+        console.log('🔥 Features: HTML formatting, clean /start only, enhanced AI context');
         console.log('📊 Expected accuracy: 95%+ with complete firm coverage');
     }
 
-    setupEventHandlers() {
+    async clearAllCommands() {
+        try {
+            // Set only /start command
+            await this.bot.setMyCommands([
+                {
+                    command: 'start',
+                    description: 'Iniciar bot - Preguntas sobre prop firms'
+                }
+            ]);
+            
+            console.log('✅ Commands cleaned - Only /start available');
+        } catch (error) {
+            console.error('❌ Error setting commands:', error.message);
+        }
+    }
+
+    async setupEventHandlers() {
+        // Clear all existing commands and set only /start
+        await this.clearAllCommands();
+        
         // Welcome message
         this.bot.onText(/\/start/, (msg) => {
             const chatId = msg.chat.id;
             this.sendWelcomeMessage(chatId);
+        });
+
+        // Handle any other command and redirect to /start
+        this.bot.onText(/\/(.+)/, (msg, match) => {
+            const chatId = msg.chat.id;
+            const command = match[1];
+            
+            if (command !== 'start') {
+                console.log(`🔄 Unknown command redirected: /${command}`);
+                this.bot.sendMessage(chatId, 
+                    '🤖 Solo uso <code>/start</code>\n\nEscribe tu pregunta directamente o usa /start para el menú.',
+                    { parse_mode: 'HTML' }
+                );
+            }
         });
 
         // Firm selection
