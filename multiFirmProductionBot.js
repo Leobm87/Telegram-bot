@@ -349,8 +349,8 @@ class MultiFirmProductionBot {
             this.sendWelcomeMessage(chatId);
         });
 
-        // Handle any other command and redirect to /start
-        this.bot.onText(/\/(.+)/, (msg, match) => {
+        // Handle any other command and redirect to /start (but ignore text with @bot)
+        this.bot.onText(/^\/([a-zA-Z]+)(?:@\w+)?$/, (msg, match) => {
             const chatId = msg.chat.id;
             const command = match[1];
             
@@ -667,16 +667,19 @@ Selecciona una prop firm para hacer preguntas específicas:
     async generateEnhancedAIResponse(question, comprehensiveData, firmSlug) {
         const firmInfo = firmSlug ? this.firms[firmSlug] : null;
         
-        // 🔥 FORMAT COMPREHENSIVE CONTEXT FROM 7 TABLES
+        // 🎯 FAQ-FIRST APPROACH: If FAQs exist, use ONLY FAQs
         let context = '';
         
-        // FAQs (conversational format)
+        // FAQs (conversational format) - PRIORITY EXCLUSIVE
         if (comprehensiveData.faqs && comprehensiveData.faqs.length > 0) {
-            context += '=== PREGUNTAS FRECUENTES ===\n';
+            context += '=== PREGUNTAS FRECUENTES (USA SOLO ESTO) ===\n';
             context += comprehensiveData.faqs.map(faq => 
                 `Q: ${faq.question}\nA: ${faq.answer_md}`
             ).join('\n\n') + '\n\n';
-        }
+            
+            // 🔥 IF FAQs EXIST, SKIP ALL OTHER DATA
+            context += '\n=== INSTRUCCIÓN: USA SOLO LAS FAQs ARRIBA, IGNORA TODO LO DEMÁS ===\n';
+        } else {
         
         // Trading Rules (structured data)
         if (comprehensiveData.rules && comprehensiveData.rules.length > 0) {
@@ -731,6 +734,8 @@ Selecciona una prop firm para hacer preguntas específicas:
             if (comprehensiveData.firmInfo.description) context += `${comprehensiveData.firmInfo.description}\n`;
             context += '\n';
         }
+        
+        } // End else block for non-FAQ data
 
         const systemPrompt = `Eres un amigo experto en prop trading que ayuda de manera natural y conversacional.
 
