@@ -232,6 +232,7 @@ Selecciona una prop firm para hacer preguntas específicas:
         
         return question
             .toLowerCase()
+            .replace(/[^\w\s]/g, '') // Remove punctuation
             .split(/\s+/)
             .filter(word => word.length > 2 && !stopWords.includes(word))
             .slice(0, 3); // Limit to top 3 keywords
