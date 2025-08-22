@@ -333,11 +333,6 @@ Selecciona una prop firm para hacer preguntas específicas:
     }
 
     async generateAIResponse(question, searchResults, firmSlug) {
-        // DEBUG LOGGING for Railway
-        console.log("🔍 DEBUG - generateAIResponse called");
-        console.log("Question:", question);
-        console.log("Firm:", firmSlug || "general");
-        console.log("Search results count:", searchResults?.length || 0);
         const firmInfo = firmSlug ? this.firms[firmSlug] : null;
         
         const context = searchResults.map(faq => 
