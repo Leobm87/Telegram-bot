@@ -300,6 +300,13 @@ Selecciona una prop firm para hacer preguntas específicas:
     detectFirmFromQuestion(question) {
         const lowerQuestion = question.toLowerCase();
         
+        // Check for general beginner questions
+        const beginnerKeywords = ['principiante', 'comenzando', 'empezar', 'nuevo', 'inicio', 'cual es mejor', 'que empresa', 'recomendacion'];
+        if (beginnerKeywords.some(keyword => lowerQuestion.includes(keyword))) {
+            console.log('🔍 Beginner question detected');
+            return 'beginner_general';
+        }
+        
         for (const [slug, firm] of Object.entries(this.firms)) {
             for (const keyword of firm.keywords) {
                 if (lowerQuestion.includes(keyword.toLowerCase())) {
@@ -324,6 +331,11 @@ Selecciona una prop firm para hacer preguntas específicas:
     }
 
     async searchAndGenerateResponse(question, firmSlug = null) {
+        // Special handling for beginner questions
+        if (firmSlug === 'beginner_general') {
+            return this.generateBeginnerResponse();
+        }
+        
         const cacheKey = `response_v3_${firmSlug || 'general'}_${question.slice(0, 50)}`;
         
         // Check cache
@@ -502,6 +514,21 @@ Selecciona una prop firm para hacer preguntas específicas:
 
 ${firmInfo ? `FIRMA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL'}
 
+🔥 REGLA CRÍTICA - SOLO ESTAS 7 FIRMAS:
+• Apex Trader Funding 🟠
+• TakeProfit Trader 🟢
+• Bulenox 🔵
+• My Funded Futures (MFF) 🟡
+• Alpha Futures 🔴
+• Tradeify ⚪
+• Vision Trade Futures 🟣
+
+❌ PROHIBIDO ABSOLUTO:
+• NUNCA mencionar FTMO, TopstepTrader, The5ers, u OTRAS firmas
+• NUNCA usar **markdown** - SOLO HTML tags
+• SOLO recomendar nuestras 7 firmas disponibles
+• Si no tienes info de nuestras firmas, dirígelo a /start
+
 ESTILO DE RESPUESTA:
 • Habla como si fueras un trader experimentado dando consejos a un amigo
 • Usa un tono natural, positivo y cercano
@@ -521,8 +548,9 @@ FORMATO HTML TELEGRAM:
 
 USA LA INFORMACIÓN DISPONIBLE:
 • Preguntas frecuentes, reglas, planes, precios, políticas, plataformas
-• Si no hay info específica, dilo de manera natural
-• Prioriza datos estructurados cuando estén disponibles`;
+• Si no hay info específica de NUESTRAS 7 FIRMAS, dilo claramente
+• Prioriza datos estructurados cuando estén disponibles
+• Si preguntan por firmas externas, redirige a nuestras opciones`;
 
         const userPrompt = `PREGUNTA: ${question}
 
@@ -562,6 +590,29 @@ Responde utilizando toda la información relevante disponible.`;
                 sum + (Array.isArray(arr) ? arr.length : (arr ? 1 : 0)), 0);
             return `❌ Error generando respuesta. Información encontrada: ${totalData} elementos de base de datos.`;
         }
+    }
+
+    generateBeginnerResponse() {
+        return `¡Perfecto! Para principiantes recomiendo nuestras <b>TOP 3 opciones</b>:
+
+🔵 <b>Bulenox</b> - Ideal para empezar
+• Trading de noticias permitido
+• Drawdown flexible (trailing o EOD)
+• Proceso simple y directo
+
+🟢 <b>TakeProfit Trader</b> - Muy accesible  
+• Planes desde <code>$39/mes</code>
+• Reglas claras para principiantes
+• Soporte en español
+
+🟠 <b>Apex Trader Funding</b> - Popular
+• Gran comunidad de traders
+• Recursos educativos
+• Proceso estructurado
+
+💡 <b>Mi consejo:</b> Empieza con una cuenta pequeña (10K-25K) para aprender sin presión.
+
+¿Te interesa alguna específica? ¡Escribe su nombre para más detalles! 🚀`;
     }
 
     // Legacy method for backwards compatibility
