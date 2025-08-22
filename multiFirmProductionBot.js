@@ -764,9 +764,10 @@ FORMATO HTML TELEGRAM:
 • USA <i>texto</i> para cursiva si necesario
 • USA <code>texto</code> para datos importantes (precios, porcentajes)
 • USA emojis y bullets simples (•)
-• Máximo 280 caracteres para mejor lectura mobile
+• Respuestas completas pero organizadas para mobile
 • Párrafos cortos separados por líneas en blanco
 • NUNCA uses **markdown** - solo HTML tags
+• NUNCA incluyas "copied to clipboard" o textos de sistema
 
 USA LA INFORMACIÓN DISPONIBLE:
 • Preguntas frecuentes, reglas, planes, precios, políticas, plataformas
@@ -789,7 +790,7 @@ Responde utilizando toda la información relevante disponible.`;
                     { role: 'user', content: userPrompt }
                 ],
                 temperature: 0.1,
-                max_tokens: 600
+                max_tokens: 800
             });
 
             let response = completion.choices[0].message.content;
