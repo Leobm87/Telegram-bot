@@ -238,15 +238,23 @@ Selecciona una prop firm para hacer preguntas específicas:
     }
 
     async searchAndGenerateResponse(question, firmSlug = null) {
+        // CRITICAL DEBUG - Track function entry
+        console.log("🚨 SEARCH ENTRY DEBUG:");
+        console.log("Question:", question);
+        console.log("Firm slug:", firmSlug);
+        console.log("Time:", new Date().toISOString());
+        
         const cacheKey = `response_${firmSlug || 'general'}_${question.slice(0, 50)}`;
         
         // Check cache
         if (this.cache.has(cacheKey)) {
             const cached = this.cache.get(cacheKey);
             if (Date.now() - cached.timestamp < this.cacheTimeout) {
+                console.log("📄 CACHE HIT - Returning cached response");
                 return cached.response;
             }
         }
+        console.log("📄 CACHE MISS - Proceeding with database search");
 
         let searchResults = [];
 
