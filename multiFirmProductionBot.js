@@ -263,6 +263,40 @@ Selecciona una prop firm para hacer preguntas específicas:
             // BULLETPROOF SEARCH for specific firm
             const firmId = this.firms[firmSlug].id;
             
+            // CRITICAL: Test basic Supabase connection first
+            console.log("🔍 CONNECTION TEST - Testing basic Supabase connection...");
+            const { data: connectionTest, error: connectionError } = await this.supabase
+                .from('faqs')
+                .select('question')
+                .eq('firm_id', firmId)
+                .limit(1);
+            
+            console.log(`🔍 CONNECTION RESULT - Firm ${firmId}: ${connectionTest?.length || 0} total FAQs exist`);
+            if (connectionError) {
+                console.error("❌ SUPABASE CONNECTION ERROR:", connectionError.message);
+                console.error("❌ Error details:", connectionError);
+            } else if (connectionTest?.length > 0) {
+                console.log("✅ SUPABASE CONNECTION OK - FAQs found for this firm");
+            } else {
+                console.log("⚠️ SUPABASE CONNECTION OK - But NO FAQs found for firm_id:", firmId);
+                
+                // DEBUG: Check what firm_ids actually exist in database
+                console.log("🔍 DEBUG - Checking what firm_ids exist in database...");
+                const { data: allFirms, error: firmsError } = await this.supabase
+                    .from('faqs')
+                    .select('firm_id')
+                    .limit(10);
+                
+                if (firmsError) {
+                    console.error("❌ Error getting firm_ids:", firmsError.message);
+                } else {
+                    const uniqueFirmIds = [...new Set(allFirms.map(f => f.firm_id))];
+                    console.log("🔍 Available firm_ids in database:", uniqueFirmIds);
+                    console.log("🔍 Looking for firm_id:", firmId);
+                    console.log("🔍 Match found:", uniqueFirmIds.includes(firmId) ? "✅ YES" : "❌ NO");
+                }
+            }
+            
             // Strategy 1: Try multiple search approaches
             console.log("🔍 SEARCH DEBUG - Firm ID:", firmId);
             const keywords = this.extractKeywords(question);
@@ -272,14 +306,22 @@ Selecciona una prop firm para hacer preguntas específicas:
             for (const keyword of keywords) {
                 if (searchResults.length >= 5) break;
                 
-                const { data: keywordData } = await this.supabase
+                console.log(`🔍 SQL DEBUG - Searching for keyword: "${keyword}" in firm_id: ${firmId}`);
+                
+                const { data: keywordData, error: keywordError } = await this.supabase
                     .from('faqs')
                     .select('question, answer_md, slug')
                     .eq('firm_id', firmId)
                     .or(`question.ilike.%${keyword}%,answer_md.ilike.%${keyword}%`)
                     .limit(3);
                 
+                console.log(`🔍 SQL RESULT - Keyword "${keyword}": ${keywordData?.length || 0} results`);
+                if (keywordError) {
+                    console.error(`❌ SQL ERROR for keyword "${keyword}":`, keywordError.message);
+                }
+                
                 if (keywordData && keywordData.length > 0) {
+                    console.log(`✅ Found FAQs for "${keyword}":`, keywordData.map(faq => faq.question));
                     // Avoid duplicates
                     const newResults = keywordData.filter(newFaq => 
                         !searchResults.some(existing => existing.slug === newFaq.slug)
