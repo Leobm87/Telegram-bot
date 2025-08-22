@@ -15,9 +15,10 @@ app.use(express.json());
 app.get('/', (req, res) => {
     res.json({
         status: 'ElTrader Bot ONLINE',
-        version: '2.0.0',
+        version: '3.1.0',
         uptime: Math.round(process.uptime()),
-        firms: 7
+        firms: 7,
+        features: 'Conversational Style + Telegram Optimized'
     });
 });
 

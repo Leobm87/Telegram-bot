@@ -152,25 +152,24 @@ class MultiFirmProductionBot {
             ]
         };
 
-        const message = `🚀 **ElTrader Financiado - Bot Multi-Firma v3.0**
+        const message = `🚀 ElTrader Financiado - Bot Multi-Firma v3.1
 
 Selecciona una prop firm para hacer preguntas específicas:
 
-📊 **Cobertura COMPLETA (7 Firmas + 7 Tablas DB):**
-🟠 **Apex** | 🟢 **TakeProfit** | 🔵 **Bulenox** | 🟡 **MFF**
-🔴 **Alpha** | ⚪ **Tradeify** | 🟣 **Vision Trade**
+📊 Cobertura COMPLETA (7 Firmas + 7 Tablas DB):
+🟠 Apex | 🟢 TakeProfit | 🔵 Bulenox | 🟡 MFF
+🔴 Alpha | ⚪ Tradeify | 🟣 Vision Trade
 
-🔥 **NUEVA v3.0 - Búsqueda Comprehensiva:**
+🔥 NUEVA v3.1 - Estilo Conversacional:
 ✅ FAQs + Reglas Trading + Planes/Precios
 ✅ Políticas Pago + Plataformas + Feeds Datos
-✅ 95%+ Accuracy con información estructurada
+✅ 95%+ Accuracy + Formato Mobile Optimizado
 
-💡 **Escribe tu pregunta directamente** - El bot detectará automáticamente la firma y buscará en TODA la base de datos.
+💡 Escribe tu pregunta directamente - El bot detectará automáticamente la firma y buscará en TODA la base de datos.
 
-🚂 **Railway Production Optimized**`;
+🚂 Railway Production Optimized`;
 
         await this.bot.sendMessage(chatId, message, {
-            parse_mode: 'Markdown',
             reply_markup: keyboard
         });
     }
@@ -186,8 +185,7 @@ Selecciona una prop firm para hacer preguntas específicas:
             if (firm) {
                 await this.bot.answerCallbackQuery(callbackQuery.id);
                 await this.bot.sendMessage(chatId, 
-                    `${firm.color} **${firm.name}** seleccionado.\n\n¿Qué quieres saber sobre ${firm.name}? Escribe tu pregunta.`,
-                    { parse_mode: 'Markdown' }
+                    `${firm.color} ${firm.name} seleccionado.\n\n¿Qué quieres saber sobre ${firm.name}? Escribe tu pregunta.`
                 );
                 
                 // Store selected firm in user context (simplified for Railway)
@@ -196,8 +194,7 @@ Selecciona una prop firm para hacer preguntas específicas:
         } else if (data === 'general_question') {
             await this.bot.answerCallbackQuery(callbackQuery.id);
             await this.bot.sendMessage(chatId, 
-                '❓ **Pregunta General**\n\nEscribe tu pregunta y analizaré todas las firmas para darte la mejor respuesta.',
-                { parse_mode: 'Markdown' }
+                '❓ Pregunta General\n\nEscribe tu pregunta y analizaré todas las firmas para darte la mejor respuesta.'
             );
         }
     }
@@ -221,7 +218,6 @@ Selecciona una prop firm para hacer preguntas específicas:
             const response = await this.searchAndGenerateResponse(question, selectedFirm);
             
             await this.bot.sendMessage(chatId, response, { 
-                parse_mode: 'Markdown',
                 disable_web_page_preview: true 
             });
 
@@ -461,27 +457,29 @@ Selecciona una prop firm para hacer preguntas específicas:
             context += '\n';
         }
 
-        const systemPrompt = `Eres un experto en prop trading firms. Tienes acceso a información COMPLETA Y ESTRUCTURADA de la base de datos.
+        const systemPrompt = `Eres un amigo experto en prop trading que ayuda de manera natural y conversacional.
 
-${firmInfo ? `FIRMA ESPECÍFICA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL - MÚLTIPLES FIRMAS'}
+${firmInfo ? `FIRMA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL'}
 
-DATOS DISPONIBLES:
-- ✅ Preguntas frecuentes (FAQs)
-- ✅ Reglas de trading detalladas  
-- ✅ Planes y precios completos
-- ✅ Políticas de pago exactas
-- ✅ Plataformas de trading disponibles
-- ✅ Feeds de datos utilizados
-- ✅ Información empresa
+ESTILO DE RESPUESTA:
+• Habla como si fueras un trader experimentado dando consejos a un amigo
+• Usa un tono natural, positivo y cercano
+• Evita sonar como un manual técnico o informe
+• Sé directo pero amigable
+• Usa expresiones naturales como "¡Perfecto!", "Exacto", "Lo bueno es que..."
+• Incluye datos específicos pero de forma conversacional
 
-REGLAS DE RESPUESTA:
-- Usa TODA la información relevante del contexto estructurado
-- Responde en español, de manera concisa y útil
-- Máximo 350 palabras
-- Incluye datos específicos (precios, porcentajes, límites)
-- Si no hay información relevante, dilo claramente
-- Usa emojis del color de la firma cuando sea apropiado
-- Prioriza datos estructurados sobre FAQs cuando ambos estén disponibles`;
+FORMATO TELEGRAM:
+• NO uses **bold** (no funciona en Telegram)
+• NO uses ### headers
+• USA solo emojis y bullets simples (•)
+• Máximo 280 caracteres para mejor lectura mobile
+• Párrafos cortos separados por líneas en blanco
+
+USA LA INFORMACIÓN DISPONIBLE:
+• Preguntas frecuentes, reglas, planes, precios, políticas, plataformas
+• Si no hay info específica, dilo de manera natural
+• Prioriza datos estructurados cuando estén disponibles`;
 
         const userPrompt = `PREGUNTA: ${question}
 
@@ -505,11 +503,11 @@ Responde utilizando toda la información relevante disponible.`;
             
             // Add firm identifier if specific firm
             if (firmInfo) {
-                response = `${firmInfo.color} **${firmInfo.name}**\n\n${response}`;
+                response = `${firmInfo.color} ${firmInfo.name}\n\n${response}`;
             }
 
             // Add "ask another question" prompt
-            response += `\n\n💬 ¿Tienes otra pregunta? Escríbela o usa /start para cambiar de firma.`;
+            response += `\n\n¿Algo más específico? 🚀`;
 
             console.log(`✅ Enhanced AI response generated v3.0 for ${firmSlug || 'general'}`);
 
