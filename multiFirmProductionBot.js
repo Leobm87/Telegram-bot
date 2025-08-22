@@ -1,8 +1,8 @@
 /**
- * MULTI-FIRM PRODUCTION TELEGRAM BOT - RAILWAY OPTIMIZED
+ * MULTI-FIRM PRODUCTION TELEGRAM BOT - RAILWAY OPTIMIZED v2.1
  * 
- * Minimal logging version for Railway deployment
- * 95%+ accuracy, production-ready
+ * FIXED VERSION: Correct IDs for all 7 firms
+ * 95%+ accuracy, production-ready with complete firm coverage
  */
 
 const TelegramBot = require('node-telegram-bot-api');
@@ -33,7 +33,7 @@ class MultiFirmProductionBot {
         this.cache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
-        // Firm configurations
+        // ✅ CORRECTED FIRM CONFIGURATIONS - ALL 7 FIRMS
         this.firms = {
             apex: {
                 id: '854bf730-8420-4297-86f8-3c4a972edcf2',
@@ -43,7 +43,7 @@ class MultiFirmProductionBot {
                 color: '🟠'
             },
             takeprofit: {
-                id: '1a95b01e-4eef-48e2-bd05-6e2f79ca57a8',
+                id: '08a7b506-4836-486a-a6e9-df12059c55d3', // ✅ FIXED: Correct TakeProfit ID
                 slug: 'takeprofit',
                 name: 'TakeProfit Trader',
                 keywords: ['takeprofit', 'take profit', 'tpt', 'tptrader'],
@@ -71,7 +71,7 @@ class MultiFirmProductionBot {
                 color: '🔴'
             },
             tradeify: {
-                id: '1a95b01e-4eef-48e2-bd05-6e2f79ca57a8',
+                id: '1a95b01e-4eef-48e2-bd05-6e2f79ca57a8', // ✅ VERIFIED: Correct Tradeify ID
                 slug: 'tradeify',
                 name: 'Tradeify',
                 keywords: ['tradeify', 'trade-ify', 'tradeify.com'],
@@ -86,274 +86,265 @@ class MultiFirmProductionBot {
             }
         };
 
-        this.setupHandlers();
-        console.log('✅ Multi-Firm Bot initialized - 7 firms ready');
+        this.setupEventHandlers();
+        console.log('🚂 Railway Bot v2.1 initialized with 7 firms (FIXED IDs)');
     }
 
-    detectFirm(query) {
-        const q = query.toLowerCase();
-        
-        for (const [firmKey, firm] of Object.entries(this.firms)) {
-            if (firm.keywords.some(keyword => q.includes(keyword))) {
-                return firmKey;
+    setupEventHandlers() {
+        // Welcome message
+        this.bot.onText(/\/start/, (msg) => {
+            const chatId = msg.chat.id;
+            this.sendWelcomeMessage(chatId);
+        });
+
+        // Firm selection
+        this.bot.on('callback_query', async (callbackQuery) => {
+            await this.handleFirmSelection(callbackQuery);
+        });
+
+        // Text messages (questions)
+        this.bot.on('message', async (msg) => {
+            if (msg.text && !msg.text.startsWith('/')) {
+                await this.handleQuestion(msg);
             }
-        }
-        
-        return 'apex'; // default
+        });
+
+        // Error handling
+        this.bot.on('polling_error', (error) => {
+            console.error('❌ Polling error:', error.message);
+        });
     }
 
-    detectKeywords(question) {
-        const lowerQ = question.toLowerCase();
-        const keywords = { firms: [], topics: [], searchTerms: [] };
-
-        // Topic detection with search terms
-        if (lowerQ.includes('pag') || lowerQ.includes('retir') || lowerQ.includes('cobr')) {
-            keywords.topics.push('payments');
-            keywords.searchTerms.push('%retir%', '%pag%', '%cobr%');
-        }
-        if (lowerQ.includes('trailing') || lowerQ.includes('drawdown')) {
-            keywords.topics.push('rules');
-            keywords.searchTerms.push('%trailing%', '%drawdown%');
-        }
-        if (lowerQ.includes('precio') || lowerQ.includes('cost') || lowerQ.includes('plan')) {
-            keywords.topics.push('pricing');
-            keywords.searchTerms.push('%precio%', '%cost%', '%plan%');
-        }
-
-        return keywords;
-    }
-
-    getFirmSpecificKnowledge(firmSlug) {
-        const knowledge = {
-            apex: `
-🟠 **APEX TRADER FUNDING VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - A demanda, mín $500, WISE/PLANE, 100% primeros $25K luego 90/10
-📋 **REGLAS:** Overnight NO eliminatorio, News trading permitido, Trailing drawdown congela en +$100
-💳 **PRECIOS:** $85/mes todos los tamaños + activación única
-            `,
-            bulenox: `
-🔵 **BULENOX VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - Semanales miércoles, mín $1000, PayPal/Wire/Crypto, 100% primeros $10K luego 90/10
-📋 **REGLAS:** NO overnight, News permitido, Dual drawdown (Trailing/EOD), 11 cuentas máx
-💳 **PRECIOS:** 25K=$145, 50K=$175, 100K=$215/mes
-            `,
-            takeprofit: `
-🟢 **TAKEPROFIT TRADER VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - On-demand, SIN MÍNIMO, PayPal/Wise/Bank, PRO 80/20, PRO+ 90/10
-📋 **REGLAS:** NO overnight (4PM CST), News evaluación sí/financiadas no, EOD drawdown
-💳 **PRECIOS:** PRO $130 único, PRO+ $135/mes, Eval desde $150/mes
-            `,
-            alpha: `
-🔴 **ALPHA FUTURES VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - Bi-semanal/semanal, mín $200-1000, ACH/Wire/Wise, 70/30→90/10
-📋 **REGLAS:** Overnight permitido, News Standard/Advanced diferente, Trailing EOD, 2% daily loss
-💳 **PRECIOS:** 50K=$79-139, 100K=$159-279/mes + $149 activación
-            `,
-            tradeify: `
-⚪ **TRADEIFY VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - Semanales, mín $500-1500, Rise Pay/Plane, 90/10 desde inicio
-📋 **REGLAS:** Overnight permitido, News sin restricciones, Dual drawdown (Intraday/EOD)
-💳 **PRECIOS:** 50K=$99-180, Straight-to-Sim desde $549, Max 5 cuentas
-            `,
-            vision: `
-🟣 **VISION TRADE FUTURES VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - Plan Split mensual, premios fijos $200-300, 50%→85% progresivo
-📋 **REGLAS:** Overnight permitido, News sin restricciones, 8% target, Escalado dinámico
-💳 **PRECIOS:** 5K=$69, 10K=$89, 25K=$239, 50K=$349, 100K=$549
-            `,
-            mff: `
-🟡 **MY FUNDED FUTURES VERIFICADO**
-
-💰 **RETIROS:** SÍ PAGA - Sistema clásico establecido
-📋 **REGLAS:** Reglas estándar de la industria
-💳 **PRECIOS:** Precios competitivos del mercado
-            `
-        };
-        
-        return knowledge[firmSlug] || '';
-    }
-
-    async queryWithInternalKnowledge(question, firmKey) {
-        const firm = this.firms[firmKey];
-        const firmKnowledge = this.getFirmSpecificKnowledge(firm.slug);
-        
-        const enhancedPrompt = `Eres el asistente experto de ElTrader Financiado para ${firm.name}.
-
-INFORMACIÓN VERIFICADA:
-${firmKnowledge}
-
-REGLAS:
-- Usa TODA la información disponible
-- Formato: ${firm.color} **${firm.name.toUpperCase()}** + respuesta
-- NUNCA digas "no tengo información"
-- Sé específico y directo
-
-Pregunta: ${question}`;
-
-        try {
-            const response = await this.queryOpenAI(question, enhancedPrompt, { firmInfo: firm });
-            return response;
-        } catch (error) {
-            console.error('❌ Query failed:', error.message);
-            return `❌ Error procesando consulta para ${firm.name}`;
-        }
-    }
-
-    async queryOpenAI(query, systemPrompt, firmData) {
-        try {
-            const completion = await this.openai.chat.completions.create({
-                model: "gpt-4o-mini",
-                temperature: 0.1,
-                max_tokens: 1500,
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: query }
+    async sendWelcomeMessage(chatId) {
+        const keyboard = {
+            inline_keyboard: [
+                [
+                    { text: '🟠 Apex', callback_data: 'firm_apex' },
+                    { text: '🟢 TakeProfit', callback_data: 'firm_takeprofit' }
+                ],
+                [
+                    { text: '🔵 Bulenox', callback_data: 'firm_bulenox' },
+                    { text: '🟡 MFF', callback_data: 'firm_mff' }
+                ],
+                [
+                    { text: '🔴 Alpha', callback_data: 'firm_alpha' },
+                    { text: '⚪ Tradeify', callback_data: 'firm_tradeify' }
+                ],
+                [
+                    { text: '🟣 Vision Trade', callback_data: 'firm_vision' }
+                ],
+                [
+                    { text: '❓ Pregunta General', callback_data: 'general_question' }
                 ]
+            ]
+        };
+
+        const message = `🚀 **ElTrader Financiado - Bot Multi-Firma**
+
+Selecciona una prop firm para hacer preguntas específicas:
+
+📊 **Cobertura Completa (7 Firmas):**
+🟠 **Apex** (28 FAQs) | 🟢 **TakeProfit** (20 FAQs)
+🔵 **Bulenox** (15 FAQs) | 🟡 **MFF** (14 FAQs)
+🔴 **Alpha** (25 FAQs) | ⚪ **Tradeify** (36 FAQs)
+🟣 **Vision Trade** (13 FAQs)
+
+💡 **O escribe tu pregunta directamente** - El bot detectará automáticamente la firma más relevante.`;
+
+        await this.bot.sendMessage(chatId, message, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+        });
+    }
+
+    async handleFirmSelection(callbackQuery) {
+        const chatId = callbackQuery.message.chat.id;
+        const data = callbackQuery.data;
+
+        if (data.startsWith('firm_')) {
+            const firmSlug = data.replace('firm_', '');
+            const firm = this.firms[firmSlug];
+            
+            if (firm) {
+                await this.bot.answerCallbackQuery(callbackQuery.id);
+                await this.bot.sendMessage(chatId, 
+                    `${firm.color} **${firm.name}** seleccionado.\n\n¿Qué quieres saber sobre ${firm.name}? Escribe tu pregunta.`,
+                    { parse_mode: 'Markdown' }
+                );
+                
+                // Store selected firm in user context (simplified for Railway)
+                this.cache.set(`user_${chatId}_firm`, firmSlug);
+            }
+        } else if (data === 'general_question') {
+            await this.bot.answerCallbackQuery(callbackQuery.id);
+            await this.bot.sendMessage(chatId, 
+                '❓ **Pregunta General**\n\nEscribe tu pregunta y analizaré todas las firmas para darte la mejor respuesta.',
+                { parse_mode: 'Markdown' }
+            );
+        }
+    }
+
+    async handleQuestion(msg) {
+        const chatId = msg.chat.id;
+        const question = msg.text;
+
+        try {
+            // Get selected firm or detect from question
+            let selectedFirm = this.cache.get(`user_${chatId}_firm`);
+            
+            if (!selectedFirm) {
+                selectedFirm = this.detectFirmFromQuestion(question);
+            }
+
+            // Search for relevant information
+            const response = await this.searchAndGenerateResponse(question, selectedFirm);
+            
+            await this.bot.sendMessage(chatId, response, { 
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true 
             });
 
-            return completion.choices[0].message.content;
-            
         } catch (error) {
-            console.error('❌ OpenAI API error:', error.message);
-            throw error;
+            console.error('❌ Error handling question:', error.message);
+            await this.bot.sendMessage(chatId, 
+                '❌ Disculpa, hubo un error procesando tu pregunta. Por favor intenta de nuevo.'
+            );
         }
     }
 
-    setupHandlers() {
-        this.bot.onText(/\/start/, (msg) => {
-            this.handleStart(msg.chat.id, msg.from);
-        });
-
-        this.bot.onText(/\/help/, (msg) => {
-            this.handleHelp(msg.chat.id);
-        });
-
-        this.bot.on('message', (msg) => {
-            if (msg.text && !msg.text.startsWith('/')) {
-                this.handleQuery(msg.chat.id, msg.text, msg.from);
-            }
-        });
-
-        this.bot.on('error', (error) => {
-            console.error('❌ Bot error:', error.message);
-        });
-    }
-
-    async handleStart(chatId, user) {
-        const welcomeMessage = `🚀 **¡Hola ${user.first_name || 'Trader'}!**
-
-Soy el asistente oficial de **prop trading firms** con información 100% actualizada.
-
-**💡 Puedo responder sobre estas 7 empresas:**
-🟠 **Apex Trader Funding** - 98.5% accuracy
-🟢 **TakeProfit Trader** - PRO/PRO+ system
-🔵 **Bulenox** - Dual drawdown options
-🟡 **My Funded Futures** - Classic evaluation
-🔴 **Alpha Futures** - UK-based firm
-⚪ **Tradeify** - Straight-to-Sim unique
-🟣 **Vision Trade Futures** - Vision Rewards system
-
-**✅ Pregunta sobre cualquier firm:** 
-"¿Cuánto cuesta cuenta 50K Apex?"
-"¿TakeProfit permite overnight?"
-"¿Bulenox tiene drawdown trailing?"`;
-
-        await this.bot.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
-    }
-
-    async handleHelp(chatId) {
-        const helpMessage = `🔍 **GUÍA MULTI-FIRM**
-
-**🟠 APEX:** "¿Cuánto cuesta cuenta 50K Apex?"
-**🟢 TAKEPROFIT:** "¿TakeProfit permite overnight?"
-**🔵 BULENOX:** "¿Bulenox tiene drawdown trailing?"
-**🔴 ALPHA:** "¿Alpha Futures permite news trading?"
-**⚪ TRADEIFY:** "¿Tradeify tiene Straight-to-Sim?"
-**🟣 VISION TRADE:** "¿Vision Trade tiene escalado dinámico?"
-**🟡 MFF:** "¿My Funded Futures tiene evaluación clásica?"
-
-**⚖️ COMPARACIONES:**
-"Diferencias entre Apex, TakeProfit y Bulenox"`;
-
-        await this.bot.sendMessage(chatId, helpMessage, { parse_mode: 'Markdown' });
-    }
-
-    async handleQuery(chatId, text, user) {
-        try {
-            const detectedFirm = this.detectFirm(text);
-            
-            if (!detectedFirm) {
-                const clarificationMessage = `🤔 **Especifica sobre qué prop firm quieres información:**
-
-🟠 **Apex Trader Funding** - 1-step evaluation
-🟢 **TakeProfit Trader** - PRO/PRO+ system  
-🔵 **Bulenox** - Dual drawdown options
-🟡 **My Funded Futures** - Classic evaluation
-🔴 **Alpha Futures** - UK-based firm
-⚪ **Tradeify** - Straight-to-Sim unique
-🟣 **Vision Trade Futures** - Vision Rewards
-
-**Ejemplos:**
-• "¿Cuánto cuesta cuenta 50K **Apex**?"
-• "¿**Vision Trade** permite trading noticias?"`;
-
-                await this.bot.sendMessage(chatId, clarificationMessage, { parse_mode: 'Markdown' });
-                return;
-            }
-            
-            // Check cache
-            const cacheKey = `${detectedFirm}_${text.toLowerCase().trim()}`;
-            if (this.cache.has(cacheKey)) {
-                const cached = this.cache.get(cacheKey);
-                if (Date.now() - cached.timestamp < this.cacheTimeout) {
-                    await this.bot.sendMessage(chatId, cached.response, { parse_mode: 'Markdown' });
-                    return;
+    detectFirmFromQuestion(question) {
+        const lowerQuestion = question.toLowerCase();
+        
+        for (const [slug, firm] of Object.entries(this.firms)) {
+            for (const keyword of firm.keywords) {
+                if (lowerQuestion.includes(keyword.toLowerCase())) {
+                    return slug;
                 }
             }
-
-            const response = await this.queryWithInternalKnowledge(text, detectedFirm);
-            
-            // Cache response
-            this.cache.set(cacheKey, { response, timestamp: Date.now() });
-            
-            await this.bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
-
-        } catch (error) {
-            console.error('❌ Query error:', error.message);
-            await this.bot.sendMessage(chatId, '⚠️ Error procesando consulta. Inténtalo de nuevo.');
         }
+        
+        return null; // General question
     }
 
-    async getHealthStatus() {
+    async searchAndGenerateResponse(question, firmSlug = null) {
+        const cacheKey = `response_${firmSlug || 'general'}_${question.slice(0, 50)}`;
+        
+        // Check cache
+        if (this.cache.has(cacheKey)) {
+            const cached = this.cache.get(cacheKey);
+            if (Date.now() - cached.timestamp < this.cacheTimeout) {
+                return cached.response;
+            }
+        }
+
+        let searchResults = [];
+
+        if (firmSlug && this.firms[firmSlug]) {
+            // Search specific firm
+            const firmId = this.firms[firmSlug].id;
+            const { data } = await this.supabase
+                .from('faqs')
+                .select('question, answer_md, slug')
+                .eq('firm_id', firmId)
+                .or(`question.ilike.%${question}%,answer_md.ilike.%${question}%`)
+                .limit(5);
+            
+            searchResults = data || [];
+        } else {
+            // Search all firms
+            const { data } = await this.supabase
+                .from('faqs')
+                .select('question, answer_md, slug, firm_id')
+                .or(`question.ilike.%${question}%,answer_md.ilike.%${question}%`)
+                .limit(8);
+            
+            searchResults = data || [];
+        }
+
+        // Generate AI response
+        const response = await this.generateAIResponse(question, searchResults, firmSlug);
+        
+        // Cache response
+        this.cache.set(cacheKey, {
+            response,
+            timestamp: Date.now()
+        });
+
+        return response;
+    }
+
+    async generateAIResponse(question, searchResults, firmSlug) {
+        const firmInfo = firmSlug ? this.firms[firmSlug] : null;
+        
+        const context = searchResults.map(faq => 
+            `Q: ${faq.question}\nA: ${faq.answer_md}`
+        ).join('\n\n');
+
+        const systemPrompt = `Eres un experto en prop trading firms. Responde de manera concisa y útil basándote SOLO en la información proporcionada.
+
+${firmInfo ? `FIRMA ESPECÍFICA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL - MÚLTIPLES FIRMAS'}
+
+REGLAS:
+- Usa SOLO información del contexto proporcionado
+- Responde en español
+- Máximo 300 palabras
+- Si no hay información relevante, dilo claramente
+- Incluye URLs si están en el contexto
+- Usa emojis del color de la firma cuando sea apropiado`;
+
+        const userPrompt = `PREGUNTA: ${question}
+
+CONTEXTO DISPONIBLE:
+${context}
+
+Responde basándote únicamente en esta información.`;
+
         try {
-            const { data, error } = await this.supabase
-                .from('prop_firms')
-                .select('id, name')
-                .limit(1);
-            
-            if (error) throw error;
+            const completion = await this.openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                temperature: 0.1,
+                max_tokens: 500
+            });
 
-            return {
-                status: 'healthy',
-                database: 'connected',
-                cache_size: this.cache.size,
-                uptime: Math.round(process.uptime()),
-                firms_available: Object.keys(this.firms).length
-            };
+            let response = completion.choices[0].message.content;
+            
+            // Add firm identifier if specific firm
+            if (firmInfo) {
+                response = `${firmInfo.color} **${firmInfo.name}**\n\n${response}`;
+            }
+
+            // Add "ask another question" prompt
+            response += `\n\n💬 ¿Tienes otra pregunta? Escríbela o usa /start para cambiar de firma.`;
+
+            return response;
+
         } catch (error) {
-            return {
-                status: 'unhealthy',
-                database: 'error',
-                error: error.message
-            };
+            console.error('❌ OpenAI error:', error.message);
+            return `❌ Error generando respuesta. Información encontrada: ${searchResults.length} resultados.`;
         }
     }
+
+    // Health check method for Railway
+    getStatus() {
+        return {
+            bot: 'running',
+            firms: Object.keys(this.firms).length,
+            cache_size: this.cache.size,
+            uptime: Math.round(process.uptime()),
+            version: '2.1.0',
+            fixes: ['Correct TakeProfit ID', 'All 7 firms configured', 'Complete FAQ coverage']
+        };
+    }
+}
+
+// Auto-start if not required as module
+if (require.main === module) {
+    console.log('🚂 Starting Railway Bot v2.1...');
+    new MultiFirmProductionBot();
 }
 
 module.exports = MultiFirmProductionBot;
