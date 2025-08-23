@@ -556,7 +556,7 @@ Selecciona una prop firm para hacer preguntas específicas:
         
         // Define keyword groups for better FAQ matching
         const keywordGroups = {
-            payment: ['retir', 'pag', 'cobr', 'dinero', 'dolar', 'transferencia', 'wire', 'ach', 'wise', 'paypal', 'metodo'],
+            payment: ['retir', 'pag', 'cobr', 'dinero', 'dolar', 'transferencia', 'wire', 'ach', 'wise', 'paypal', 'metodo', 'umbral', 'minimo', 'safety', 'net', '100k', '103'],
             rules: ['regla', 'limit', 'drawdown', 'perdida', 'target', 'objetivo', 'dias', 'tiempo'],
             evaluation: ['evaluacion', 'demo', 'challenge', 'paso', 'aprobar', 'pasar'],
             live: ['live', 'real', 'financiad', 'fondeado', 'funded'],
@@ -903,7 +903,8 @@ FORMATO HTML TELEGRAM:
 • NUNCA incluyas "copied to clipboard" o textos de sistema
 
 USA LA INFORMACIÓN DISPONIBLE:
-• PRIORIDAD 1: FAQs específicos (si existe FAQ relevante, úsalo como base)
+• PRIORIDAD 1: FAQs específicos (si existe FAQ relevante, úsalo como base) 
+• IMPORTANTE: Si hay FAQ sobre umbral/retiros/safety net, ÚSALO COMPLETO sin resumir
 • PRIORIDAD 2: Complementa con datos estructurados (planes/precios/reglas)
 • PRIORIDAD 3: Si no hay FAQs, usa datos estructurados como fuente principal
 • APEX ESPECÍFICO: Distinguir precios evaluación ($147 único) vs PA ($130 único + $85/mes opcional)
