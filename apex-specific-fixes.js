@@ -79,8 +79,9 @@ function enhanceApexResponse(question, originalResponse, firmSlug) {
 
     const lowerQuestion = question.toLowerCase();
     
-    // FIX 0: Payment method questions - only credit/debit cards
-    if (lowerQuestion.includes('pagar') || lowerQuestion.includes('paypal') || lowerQuestion.includes('metodo') || lowerQuestion.includes('payment')) {
+    // FIX 0: Payment method questions - only credit/debit cards (exclude withdrawal questions)
+    if ((lowerQuestion.includes('pagar') || lowerQuestion.includes('paypal') || lowerQuestion.includes('metodo') || lowerQuestion.includes('payment')) && 
+        !lowerQuestion.includes('retir') && !lowerQuestion.includes('withdrawal') && !lowerQuestion.includes('cobr')) {
         return formatApexPaymentResponse();
     }
 
@@ -89,8 +90,13 @@ function enhanceApexResponse(question, originalResponse, firmSlug) {
         return formatApexPlansResponse();
     }
 
-    // FIX 2: Withdrawal threshold questions - use specific Safety Net values
-    if (lowerQuestion.includes('umbral') || lowerQuestion.includes('retir') || lowerQuestion.includes('withdrawal')) {
+    // FIX 2: Withdrawal method questions - show withdrawal methods and policies
+    if (lowerQuestion.includes('retir') || lowerQuestion.includes('withdrawal') || lowerQuestion.includes('cobr')) {
+        return formatApexWithdrawalMethodsResponse();
+    }
+    
+    // FIX 2b: Withdrawal threshold questions - use specific Safety Net values
+    if (lowerQuestion.includes('umbral') || lowerQuestion.includes('threshold') || lowerQuestion.includes('safety')) {
         const accountSize = extractAccountSize(lowerQuestion);
         return formatApexWithdrawalResponse(accountSize);
     }
@@ -285,6 +291,31 @@ function formatApexActivationResponse() {
 • Alternativa mensual disponible para todos
 
 ¿Algo más específico? 🚀`;
+}
+
+function formatApexWithdrawalMethodsResponse() {
+    return `🟠 <b>Apex - Métodos de Retiro</b>
+
+<b>💰 MÉTODOS DISPONIBLES:</b>
+• <b>WISE</b> (para USA)
+• <b>PLANE</b> (internacional)
+
+<b>📋 REQUISITOS PARA RETIRO:</b>
+• Mínimo 8 días de trading activo
+• Al menos 5 días con profit de <code>$50+</code>
+• Alcanzar Safety Net (umbral mínimo)
+• Cumplir regla de consistencia 30%
+
+<b>💵 LÍMITES DE RETIRO:</b>
+• Mínimo: <code>$500</code> (todos los tamaños)
+• Máximo primeros 5 retiros: <code>$1,500-$3,500</code>
+• A partir del 6º retiro: sin límite máximo
+
+<b>📊 PROFIT SPLIT:</b>
+• Primeros <code>$25,000</code>: 100% para ti
+• Después: 90% para ti, 10% Apex
+
+¿Necesitas info sobre Safety Net específico? 🚀`;
 }
 
 module.exports = {
