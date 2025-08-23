@@ -656,11 +656,12 @@ Selecciona una prop firm para hacer preguntas específicas:
                 }
                 
                 const [faqs, rules, plans, payouts, firmPlatforms, firmDataFeeds, firmInfo] = await Promise.all([
-                    // TIER 1 - CRITICAL DATA - ENHANCED SEARCH
+                    // TIER 1 - CRITICAL DATA - ENHANCED SEARCH WITH PRIORITY ORDERING
                     this.supabase.from('faqs')
                         .select('question, answer_md, slug')
                         .eq('firm_id', firmId)
                         .or(faqSearchConditions.join(','))
+                        .order('created_at', { ascending: false }) // Most recent first
                         .limit(8),
                     
                     this.supabase.from('trading_rules')
