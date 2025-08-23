@@ -795,10 +795,29 @@ Selecciona una prop firm para hacer preguntas específicas:
         
         // FAQs (conversational format) - HIGH PRIORITY
         if (hasMeaningfulFAQs) {
-            context += '=== PREGUNTAS FRECUENTES (PRIORIDAD ALTA) ===\n';
-            context += comprehensiveData.faqs.map(faq => 
-                `Q: ${faq.question}\nA: ${faq.answer_md}`
-            ).join('\n\n') + '\n\n';
+            // 🎯 CRITICAL FIX: Prioritize specific FAQ about thresholds/safety nets
+            const umbralFAQ = comprehensiveData.faqs.find(faq => 
+                faq.slug === 'apex-umbral-minimo-retiros-100k' ||
+                faq.question.toLowerCase().includes('umbral') ||
+                faq.question.toLowerCase().includes('safety net') ||
+                faq.answer_md.includes('Safety Net') ||
+                faq.answer_md.includes('$103,100')
+            );
+            
+            if (umbralFAQ && (question.toLowerCase().includes('umbral') || question.toLowerCase().includes('safety'))) {
+                context += '=== FAQ ESPECÍFICA PRIORITARIA ===\n';
+                context += `Q: ${umbralFAQ.question}\nA: ${umbralFAQ.answer_md}\n\n`;
+                context += '=== OTRAS PREGUNTAS FRECUENTES ===\n';
+                context += comprehensiveData.faqs
+                    .filter(faq => faq.slug !== umbralFAQ.slug)
+                    .map(faq => `Q: ${faq.question}\nA: ${faq.answer_md}`)
+                    .join('\n\n') + '\n\n';
+            } else {
+                context += '=== PREGUNTAS FRECUENTES (PRIORIDAD ALTA) ===\n';
+                context += comprehensiveData.faqs.map(faq => 
+                    `Q: ${faq.question}\nA: ${faq.answer_md}`
+                ).join('\n\n') + '\n\n';
+            }
         }
         
         // Always include structured data as backup/complement
@@ -905,6 +924,7 @@ FORMATO HTML TELEGRAM:
 USA LA INFORMACIÓN DISPONIBLE:
 • PRIORIDAD 1: FAQs específicos (si existe FAQ relevante, úsalo como base) 
 • IMPORTANTE: Si hay FAQ sobre umbral/retiros/safety net, ÚSALO COMPLETO sin resumir
+• CRÍTICO: Si hay "FAQ ESPECÍFICA PRIORITARIA" en el contexto, usa ESA y no las genéricas
 • PRIORIDAD 2: Complementa con datos estructurados (planes/precios/reglas)
 • PRIORIDAD 3: Si no hay FAQs, usa datos estructurados como fuente principal
 • APEX ESPECÍFICO: Distinguir precios evaluación ($147 único) vs PA ($130 único + $85/mes opcional)
