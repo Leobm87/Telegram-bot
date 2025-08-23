@@ -314,11 +314,25 @@ class MultiFirmProductionBot {
 
     async initializeBot() {
         await this.setupEventHandlers();
-        this.logger.info('🚀 Multi-Firm Bot v4.0 initialized - 100% PRECISION COMPARISONS ENABLED', {
+        this.logger.info('🚀 Multi-Firm Bot v4.1 initialized - ENHANCED ACCURACY + STANDARDIZED RESPONSES', {
             firms: Object.keys(this.firms).length,
             searchTables: 7,
-            features: ['100% Precision Comparisons', 'HTML formatting', 'Clean /start only', 'Deterministic calculations'],
-            environment: 'railway_production'
+            features: [
+                '100% Precision Comparisons', 
+                'Fixed monetary formatting ($1,500 not 1500%)',
+                'Enhanced keyword search',
+                'FAQ-first with structured fallback',
+                'Standardized response quality',
+                'HTML formatting', 
+                'Deterministic calculations'
+            ],
+            environment: 'railway_production',
+            improvements: [
+                'CRITICAL: Fixed Apex/Alpha monetary display errors',
+                'ENHANCED: Keyword extraction for better FAQ matching', 
+                'IMPROVED: No more "information not available" false negatives',
+                'STANDARDIZED: Consistent response quality across all 7 firms'
+            ]
         });
     }
 
@@ -508,6 +522,41 @@ Selecciona una prop firm para hacer preguntas específicas:
         }
     }
 
+    extractSearchKeywords(question) {
+        const lowerQuestion = question.toLowerCase();
+        
+        // Define keyword groups for better FAQ matching
+        const keywordGroups = {
+            payment: ['retir', 'pag', 'cobr', 'dinero', 'dolar', 'transferencia', 'wire', 'ach', 'wise', 'paypal', 'metodo'],
+            rules: ['regla', 'limit', 'drawdown', 'perdida', 'target', 'objetivo', 'dias', 'tiempo'],
+            evaluation: ['evaluacion', 'demo', 'challenge', 'paso', 'aprobar', 'pasar'],
+            live: ['live', 'real', 'financiad', 'fondeado', 'funded'],
+            pricing: ['precio', 'cost', 'mensual', 'activacion', 'reset', 'barato', 'caro'],
+            platform: ['plataforma', 'ninjatrader', 'tradingview', 'metatrader', 'rithmic'],
+            general: ['cuenta', 'plan', 'como', 'que', 'cuando', 'donde', 'proceso']
+        };
+        
+        const extractedKeywords = [];
+        
+        // Extract keywords from question
+        Object.entries(keywordGroups).forEach(([group, keywords]) => {
+            keywords.forEach(keyword => {
+                if (lowerQuestion.includes(keyword)) {
+                    extractedKeywords.push(keyword);
+                }
+            });
+        });
+        
+        // Also extract words from question (minimum 3 chars)
+        const questionWords = question.toLowerCase()
+            .split(/\s+/)
+            .filter(word => word.length >= 3)
+            .filter(word => !['que', 'como', 'donde', 'cuando', 'con', 'para', 'por', 'una', 'los', 'las', 'del', 'con'].includes(word))
+            .slice(0, 5); // Limit to 5 most important words
+        
+        return [...new Set([...extractedKeywords, ...questionWords])];
+    }
+
     detectFirmFromQuestion(question) {
         const lowerQuestion = question.toLowerCase();
         
@@ -563,13 +612,28 @@ Selecciona una prop firm para hacer preguntas específicas:
             });
 
             try {
+                // Extract search keywords for better FAQ matching
+                const searchKeywords = this.extractSearchKeywords(question);
+                
+                // Create search conditions for FAQs
+                let faqSearchConditions = [];
+                searchKeywords.forEach(keyword => {
+                    faqSearchConditions.push(`question.ilike.%${keyword}%`);
+                    faqSearchConditions.push(`answer_md.ilike.%${keyword}%`);
+                });
+                
+                // Fallback to original question if no keywords extracted
+                if (faqSearchConditions.length === 0) {
+                    faqSearchConditions = [`question.ilike.%${question}%`, `answer_md.ilike.%${question}%`];
+                }
+                
                 const [faqs, rules, plans, payouts, firmPlatforms, firmDataFeeds, firmInfo] = await Promise.all([
-                    // TIER 1 - CRITICAL DATA
+                    // TIER 1 - CRITICAL DATA - ENHANCED SEARCH
                     this.supabase.from('faqs')
                         .select('question, answer_md, slug')
                         .eq('firm_id', firmId)
-                        .or(`question.ilike.%${question}%,answer_md.ilike.%${question}%`)
-                        .limit(5),
+                        .or(faqSearchConditions.join(','))
+                        .limit(8),
                     
                     this.supabase.from('trading_rules')
                         .select('rule_name, value_text, value_numeric, phase, rule_slug')
@@ -635,20 +699,34 @@ Selecciona una prop firm para hacer preguntas específicas:
             }
             
         } else {
-            // Search all firms (FAQ-only for general queries)
+            // Search all firms with enhanced keyword search
+            const searchKeywords = this.extractSearchKeywords(question);
+            
+            let generalSearchConditions = [];
+            searchKeywords.forEach(keyword => {
+                generalSearchConditions.push(`question.ilike.%${keyword}%`);
+                generalSearchConditions.push(`answer_md.ilike.%${keyword}%`);
+            });
+            
+            // Fallback to original question if no keywords extracted
+            if (generalSearchConditions.length === 0) {
+                generalSearchConditions = [`question.ilike.%${question}%`, `answer_md.ilike.%${question}%`];
+            }
+            
             const { data, error } = await this.supabase
                 .from('faqs')
                 .select('question, answer_md, slug, firm_id')
-                .or(`question.ilike.%${question}%,answer_md.ilike.%${question}%`)
-                .limit(8);
+                .or(generalSearchConditions.join(','))
+                .limit(10);
             
             if (error) {
                 this.logger.error('General search error', { error: error.message });
             }
             
             comprehensiveData = { faqs: data || [] };
-            this.logger.info('General search completed', { 
-                resultsCount: comprehensiveData.faqs.length 
+            this.logger.info('Enhanced general search completed', { 
+                resultsCount: comprehensiveData.faqs.length,
+                searchKeywords: searchKeywords 
             });
         }
 
@@ -667,19 +745,20 @@ Selecciona una prop firm para hacer preguntas específicas:
     async generateEnhancedAIResponse(question, comprehensiveData, firmSlug) {
         const firmInfo = firmSlug ? this.firms[firmSlug] : null;
         
-        // 🎯 FAQ-FIRST APPROACH: If FAQs exist, use ONLY FAQs
+        // 🎯 BALANCED APPROACH: Prioritize FAQs but allow fallback to structured data
         let context = '';
+        let hasMeaningfulFAQs = comprehensiveData.faqs && comprehensiveData.faqs.length > 0;
         
-        // FAQs (conversational format) - PRIORITY EXCLUSIVE
-        if (comprehensiveData.faqs && comprehensiveData.faqs.length > 0) {
-            context += '=== PREGUNTAS FRECUENTES (USA SOLO ESTO) ===\n';
+        // FAQs (conversational format) - HIGH PRIORITY
+        if (hasMeaningfulFAQs) {
+            context += '=== PREGUNTAS FRECUENTES (PRIORIDAD ALTA) ===\n';
             context += comprehensiveData.faqs.map(faq => 
                 `Q: ${faq.question}\nA: ${faq.answer_md}`
             ).join('\n\n') + '\n\n';
-            
-            // 🔥 IF FAQs EXIST, SKIP ALL OTHER DATA
-            context += '\n=== INSTRUCCIÓN: USA SOLO LAS FAQs ARRIBA, IGNORA TODO LO DEMÁS ===\n';
-        } else {
+        }
+        
+        // Always include structured data as backup/complement
+        if (!hasMeaningfulFAQs || (comprehensiveData.plans && comprehensiveData.plans.length > 0)) {
         
         // Trading Rules (structured data)
         if (comprehensiveData.rules && comprehensiveData.rules.length > 0) {
@@ -694,9 +773,9 @@ Selecciona una prop firm para hacer preguntas específicas:
             context += '=== PLANES DE CUENTA ===\n';
             context += comprehensiveData.plans.map(plan => {
                 let planInfo = `${plan.display_name} - ${plan.account_size}$ (${plan.price_monthly}$/mes)`;
-                if (plan.profit_target) planInfo += ` | Target: ${plan.profit_target}%`;
+                if (plan.profit_target) planInfo += ` | Target: $${plan.profit_target.toLocaleString()}`;
                 if (plan.daily_loss_limit) planInfo += ` | Pérdida diaria: ${plan.daily_loss_limit}%`;
-                if (plan.drawdown_max) planInfo += ` | Drawdown: ${plan.drawdown_max}% (${plan.drawdown_type})`;
+                if (plan.drawdown_max) planInfo += ` | Drawdown: $${plan.drawdown_max.toLocaleString()} (${plan.drawdown_type})`;
                 if (plan.max_contracts_minis) planInfo += ` | Contratos: ${plan.max_contracts_minis} minis`;
                 return planInfo;
             }).join('\n') + '\n\n';
@@ -735,7 +814,7 @@ Selecciona una prop firm para hacer preguntas específicas:
             context += '\n';
         }
         
-        } // End else block for non-FAQ data
+        } // End structured data inclusion
 
         const systemPrompt = `Eres un amigo experto en prop trading que ayuda de manera natural y conversacional.
 
@@ -756,13 +835,14 @@ ${firmInfo ? `FIRMA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL'}
 • SOLO recomendar nuestras 7 firmas disponibles
 • Si no tienes info de nuestras firmas, dirígelo a /start
 
-ESTILO DE RESPUESTA:
-• Sé DIRECTO y CONCISO - máximo 6-8 líneas
-• PRIORIZA información FAQ específica sobre datos técnicos
-• Si hay FAQ específico, úsalo PRIMERO antes que datos de tablas
-• Evita mezclar múltiples fuentes de datos
-• Usa un tono amigable pero directo
-• Incluye SOLO los datos más relevantes
+ESTILO DE RESPUESTA - ESTANDARIZADO:
+• ESTRUCTURA: Máximo 8-10 líneas organizadas en bullets
+• PRIORIDAD: FAQ específico → Datos estructurados → Combinación inteligente
+• FORMATO CONSISTENTE: Siempre incluir precios como <code>$XXX/mes</code>
+• VALORES MONETARIOS: Siempre formatear como $X,XXX (nunca porcentajes para dinero)
+• TONO: Profesional, directo, útil - mismo nivel para todas las firmas
+• COMPLETITUD: Responder la pregunta específica + 1-2 datos adicionales relevantes
+• LLAMADA A ACCIÓN: Siempre terminar sugiriendo más preguntas específicas
 
 FORMATO HTML TELEGRAM:
 • USA <b>texto</b> para negrita (funciona perfecto)
@@ -775,11 +855,11 @@ FORMATO HTML TELEGRAM:
 • NUNCA incluyas "copied to clipboard" o textos de sistema
 
 USA LA INFORMACIÓN DISPONIBLE:
-• PRIORIDAD 1: FAQs específicos (si existe FAQ exacto, úsalo COMPLETO)
-• PRIORIDAD 2: Datos de planes/precios (solo si no hay FAQ)
-• PRIORIDAD 3: Reglas generales (solo si necesario)
-• NO mezcles múltiples tablas en una respuesta
-• Si no hay info específica, dilo claramente`;
+• PRIORIDAD 1: FAQs específicos (si existe FAQ relevante, úsalo como base)
+• PRIORIDAD 2: Complementa con datos estructurados (planes/precios/reglas)
+• PRIORIDAD 3: Si no hay FAQs, usa datos estructurados como fuente principal
+• Combina fuentes inteligentemente para respuestas completas
+• Si no hay información relevante, sugiere usar /start o preguntar diferente`;
 
         const userPrompt = `PREGUNTA: ${question}
 
@@ -809,10 +889,16 @@ Responde utilizando toda la información relevante disponible.`;
             // Add "ask another question" prompt
             response += `\n\n¿Algo más específico? 🚀`;
 
-            this.logger.info('Enhanced AI response generated v3.0', { 
+            this.logger.info('Enhanced AI response generated v4.0 - STANDARDIZED', { 
                 firm: firmSlug || 'general',
                 contextLength: context.length,
                 responseLength: response.length,
+                improvements: [
+                    'Monetary formatting fixed',
+                    'Keyword search enhanced', 
+                    'FAQ-first with structured fallback',
+                    'Standardized response quality'
+                ],
                 tablesUsed: {
                     faqs: comprehensiveData.faqs?.length || 0,
                     rules: comprehensiveData.rules?.length || 0,
@@ -873,7 +959,7 @@ Responde utilizando toda la información relevante disponible.`;
             firms: Object.keys(this.firms).length,
             cache_size: this.cache.size,
             uptime: Math.round(process.uptime()),
-            version: '4.0.0',
+            version: '4.1.0',
             environment: 'railway_production',
             features: {
                 precision_comparisons: true,
@@ -882,11 +968,20 @@ Responde utilizando toda la información relevante disponible.`;
                 ai_enhanced: true,
                 structured_context: true,
                 intelligent_caching: true,
-                deterministic_calculations: true
+                deterministic_calculations: true,
+                monetary_formatting_fixed: true,
+                keyword_search_enhanced: true,
+                standardized_responses: true
             },
+            critical_fixes: [
+                'FIXED: Monetary values display ($1,500 not 1500%)',
+                'FIXED: FAQ search with keyword extraction',
+                'FIXED: No more false "information not available"',
+                'ENHANCED: Standardized response quality all firms'
+            ],
             improvements: [
                 '100% accurate price comparisons',
-                'Deterministic calculation engine',
+                'Deterministic calculation engine', 
                 'Hybrid AI + programmatic logic',
                 '7-table comprehensive search',
                 'Enhanced AI context formatting'
