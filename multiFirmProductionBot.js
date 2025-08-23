@@ -34,6 +34,7 @@ const OpenAI = require('openai');
 
 // Import v4.2 Critical Revenue Fixes
 const v42Fixes = require('./v42-critical-fixes');
+const apexFixes = require('./apex-specific-fixes');
 
 /**
  * 🎯 PRECISION COMPARATIVE ENGINE - 100% ACCURACY
@@ -883,8 +884,10 @@ ${firmInfo ? `FIRMA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL'}
 ESTILO DE RESPUESTA - ESTANDARIZADO:
 • ESTRUCTURA: Máximo 8-10 líneas organizadas en bullets
 • PRIORIDAD: FAQ específico → Datos estructurados → Combinación inteligente
-• FORMATO CONSISTENTE: Siempre incluir precios como <code>$XXX/mes</code>
+• FORMATO CONSISTENTE: Siempre incluir precios como <code>$XXX</code> (pago único) o <code>$XXX/mes</code> (mensual)
 • VALORES MONETARIOS: Siempre formatear como $X,XXX (nunca porcentajes para dinero)
+• SEPARAR FASES: Distinguir claramente Evaluación vs Cuenta PA/Real
+• SAFETY NET: Para Apex, usar umbrales específicos por cuenta (no genérico $500)
 • TONO: Profesional, directo, útil - mismo nivel para todas las firmas
 • COMPLETITUD: Responder la pregunta específica + 1-2 datos adicionales relevantes
 • LLAMADA A ACCIÓN: Siempre terminar sugiriendo más preguntas específicas
@@ -903,6 +906,10 @@ USA LA INFORMACIÓN DISPONIBLE:
 • PRIORIDAD 1: FAQs específicos (si existe FAQ relevante, úsalo como base)
 • PRIORIDAD 2: Complementa con datos estructurados (planes/precios/reglas)
 • PRIORIDAD 3: Si no hay FAQs, usa datos estructurados como fuente principal
+• APEX ESPECÍFICO: Distinguir precios evaluación ($147 único) vs PA ($130 único + $85/mes opcional)
+• APEX UMBRALES: Usar Safety Net específico ($26,600 para 25K, $103,100 para 100K, etc)
+• APEX SALDOS: Mencionar saldos iniciales reales ($23,500 para 25K, $97,000 para 100K)
+• FASES CLARAS: Separar requisitos/reglas de Evaluación vs Cuenta PA
 • Combina fuentes inteligentemente para respuestas completas
 • Si no hay información relevante, sugiere usar /start o preguntar diferente`;
 
@@ -935,6 +942,10 @@ Responde utilizando toda la información relevante disponible.`;
             response += `\n\n¿Algo más específico? 🚀`;
 
             // Apply v4.2 post-processing to response
+            response = v42Fixes.postProcessResponse(response);
+            
+            // Apply Apex-specific fixes if applicable
+            response = apexFixes.enhanceApexResponse(question, response, firmSlug);
             response = v42Fixes.blockExternalFirms(response);
             
             this.logger.info('Enhanced AI response generated v4.2 - CRITICAL REVENUE FIXES', { 
