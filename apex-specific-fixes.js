@@ -124,6 +124,15 @@ function enhanceApexResponse(question, originalResponse, firmSlug) {
 }
 
 function extractAccountSize(question) {
+    const lowerQuestion = question.toLowerCase();
+    
+    // Check for "all accounts" requests first
+    const allAccountKeywords = ['todas', 'cada', 'diferentes', 'all', 'every', 'each', 'general'];
+    if (allAccountKeywords.some(keyword => lowerQuestion.includes(keyword))) {
+        return 'all'; // Special flag for all accounts
+    }
+    
+    // Look for specific account sizes
     const sizeMatches = question.match(/(\d+)k/) || question.match(/(\d+)\.?000/);
     if (sizeMatches) {
         const size = question.includes('k') ? 
@@ -188,6 +197,11 @@ function formatApexPlansResponse() {
 }
 
 function formatApexWithdrawalResponse(accountSize) {
+    // Handle "all accounts" request
+    if (accountSize === 'all') {
+        return formatApexAllSafetyNetsResponse();
+    }
+    
     const safetyNet = APEX_SAFETY_NET[accountSize] || APEX_SAFETY_NET['100000'];
     const maxWithdrawal = APEX_MAX_WITHDRAWAL_LIMITS[accountSize] || APEX_MAX_WITHDRAWAL_LIMITS['100000'];
     const initialBalance = APEX_INITIAL_BALANCES[accountSize] || APEX_INITIAL_BALANCES['100000'];
@@ -215,6 +229,32 @@ function formatApexWithdrawalResponse(accountSize) {
 <i>Nota: Saldo inicial real es <code>$${initialBalance.toLocaleString()}</code></i>
 
 ¿Algo más específico? 🚀`;
+}
+
+function formatApexAllSafetyNetsResponse() {
+    return `🟠 <b>Apex Trader Funding</b>
+
+<b>Safety Net por Cuenta (Umbral Mínimo):</b>
+
+<b>💰 CUENTAS DISPONIBLES:</b>
+• <code>25K</code> → Safety Net: <code>$26,600</code>
+• <code>50K</code> → Safety Net: <code>$52,600</code>
+• <code>75K</code> → Safety Net: <code>$77,850</code>
+• <code>100K</code> → Safety Net: <code>$103,100</code>
+• <code>150K</code> → Safety Net: <code>$155,100</code>
+• <code>250K</code> → Safety Net: <code>$256,600</code>
+• <code>300K</code> → Safety Net: <code>$307,600</code>
+
+<b>🎯 ¿Qué es Safety Net?</b>
+• Umbral mínimo para operar con contratos completos
+• Debajo del Safety Net → Solo 50% de los contratos
+• Arriba del Safety Net → 100% de los contratos
+
+<b>⚡ Métodos de Retiro:</b>
+• WISE (USA) | PLANE (Internacional)
+• Mínimo: <code>$500</code> por retiro
+
+¿Necesitas detalles de alguna cuenta específica? 🚀`;
 }
 
 function formatApexPARulesResponse() {
