@@ -79,26 +79,29 @@ function enhanceApexResponse(question, originalResponse, firmSlug) {
 
     const lowerQuestion = question.toLowerCase();
     
-    // FIX 0: Payment method questions - only credit/debit cards (exclude withdrawal questions)
-    if ((lowerQuestion.includes('pagar') || lowerQuestion.includes('paypal') || lowerQuestion.includes('metodo') || lowerQuestion.includes('payment')) && 
-        !lowerQuestion.includes('retir') && !lowerQuestion.includes('withdrawal') && !lowerQuestion.includes('cobr')) {
-        return formatApexPaymentResponse();
-    }
-
-    // FIX 1: Plans/Pricing questions - separate evaluation vs PA clearly
-    if (lowerQuestion.includes('planes') || lowerQuestion.includes('precio') || lowerQuestion.includes('cuenta')) {
-        return formatApexPlansResponse();
+    // 🔥 CRITICAL FIX: REORDERED CONDITIONS - Most specific FIRST
+    
+    // FIX 2b: Withdrawal threshold questions - use specific Safety Net values (MOVED TO TOP - MOST SPECIFIC)
+    if (lowerQuestion.includes('umbral') || lowerQuestion.includes('threshold') || lowerQuestion.includes('safety')) {
+        const accountSize = extractAccountSize(lowerQuestion);
+        return formatApexWithdrawalResponse(accountSize);
     }
 
     // FIX 2: Withdrawal method questions - show withdrawal methods and policies
     if (lowerQuestion.includes('retir') || lowerQuestion.includes('withdrawal') || lowerQuestion.includes('cobr')) {
         return formatApexWithdrawalMethodsResponse();
     }
-    
-    // FIX 2b: Withdrawal threshold questions - use specific Safety Net values
-    if (lowerQuestion.includes('umbral') || lowerQuestion.includes('threshold') || lowerQuestion.includes('safety')) {
-        const accountSize = extractAccountSize(lowerQuestion);
-        return formatApexWithdrawalResponse(accountSize);
+
+    // FIX 0: Payment method questions - only credit/debit cards (exclude withdrawal questions)
+    if ((lowerQuestion.includes('pagar') || lowerQuestion.includes('paypal') || lowerQuestion.includes('metodo') || lowerQuestion.includes('payment')) && 
+        !lowerQuestion.includes('retir') && !lowerQuestion.includes('withdrawal') && !lowerQuestion.includes('cobr')) {
+        return formatApexPaymentResponse();
+    }
+
+    // FIX 1: Plans/Pricing questions - MOVED TO BOTTOM as it's most generic (contains "cuenta" which matches many questions)
+    if (lowerQuestion.includes('planes') || lowerQuestion.includes('precio') || 
+        (lowerQuestion.includes('cuenta') && !lowerQuestion.includes('safety') && !lowerQuestion.includes('umbral') && !lowerQuestion.includes('retir'))) {
+        return formatApexPlansResponse();
     }
 
     // FIX 3: PA rules questions - separate from evaluation rules
