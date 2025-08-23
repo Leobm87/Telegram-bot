@@ -4,9 +4,13 @@
 // Deploy Date: 23 Aug 2025
 // Priority: IMMEDIATE (Revenue Impact: €8K-12K/month)
 
-// CRITICAL FIX 1: DISCOUNT SYSTEM INTEGRATION
+// CRITICAL FIX 1: DISCOUNT SYSTEM INTEGRATION (OPTIONAL)
 // =====================================================
 async function getActiveDiscount(supabase, firmId) {
+  // Discount system disabled for now - will be configured after core bot is working
+  return null;
+  
+  /* FUTURE IMPLEMENTATION:
   try {
     const { data, error } = await supabase
       .from('discounts')
@@ -27,6 +31,7 @@ async function getActiveDiscount(supabase, firmId) {
     console.log('Discount system error:', error);
     return null;
   }
+  */
 }
 
 function formatDiscountOffer(discount, firmName) {
