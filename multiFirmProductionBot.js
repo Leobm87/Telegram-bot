@@ -35,6 +35,7 @@ const OpenAI = require('openai');
 // Import v4.2 Critical Revenue Fixes
 const v42Fixes = require('./v42-critical-fixes');
 const apexFixes = require('./apex-specific-fixes');
+const bulenoxFixes = require('./bulenox-specific-fixes');
 
 /**
  * 🎯 PRECISION COMPARATIVE ENGINE - 100% ACCURACY
@@ -962,8 +963,9 @@ Responde utilizando toda la información relevante disponible.`;
             // Add "ask another question" prompt
             response += `\n\n¿Algo más específico? 🚀`;
 
-            // Apply Apex-specific fixes if applicable
+            // Apply firm-specific fixes if applicable
             response = apexFixes.enhanceApexResponse(question, response, firmSlug);
+            response = bulenoxFixes.enhanceBulenoxResponse(question, response, firmSlug);
             response = v42Fixes.blockExternalFirms(response);
             
             this.logger.info('Enhanced AI response generated v4.2 - CRITICAL REVENUE FIXES', { 
