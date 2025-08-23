@@ -941,9 +941,6 @@ Responde utilizando toda la información relevante disponible.`;
             // Add "ask another question" prompt
             response += `\n\n¿Algo más específico? 🚀`;
 
-            // Apply v4.2 post-processing to response
-            response = v42Fixes.postProcessResponse(response);
-            
             // Apply Apex-specific fixes if applicable
             response = apexFixes.enhanceApexResponse(question, response, firmSlug);
             response = v42Fixes.blockExternalFirms(response);
