@@ -763,7 +763,14 @@ Selecciona una prop firm para hacer preguntas específicas:
         if (firmSlug && this.firms[firmSlug]) {
             const firmId = this.firms[firmSlug].id;
             const firmName = this.firms[firmSlug].name;
-            response = await v42Fixes.generateEnhancedResponse(question, firmId, firmName, this.supabase, this.openai);
+            const v42Response = await v42Fixes.generateEnhancedResponse(question, firmId, firmName, this.supabase, this.openai);
+            
+            // If v42 returns null, use main bot response generation
+            if (v42Response) {
+                response = v42Response;
+            } else {
+                response = await this.generateEnhancedAIResponse(question, comprehensiveData, firmSlug);
+            }
         } else {
             response = await this.generateEnhancedAIResponse(question, comprehensiveData, firmSlug);
         }

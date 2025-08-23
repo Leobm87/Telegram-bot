@@ -113,33 +113,10 @@ PROHIBICIÓN ABSOLUTA - FIRMAS EXTERNAS:
 // CRITICAL FIX 3: ENHANCED RESPONSE QUALITY
 // =====================================================
 async function generateEnhancedResponse(question, firmId, firmName, supabase, openai) {
-  try {
-    // 1. Get FAQ response
-    const faqResponse = await searchFAQs(question, firmId, supabase);
-    
-    // 2. Get active discount
-    const discount = await getActiveDiscount(supabase, firmId);
-    
-    // 3. Generate base response
-    let response = faqResponse || await generateFallbackResponse(question, firmId, supabase, openai);
-    
-    // 4. Block external firms
-    response = blockExternalFirms(response);
-    
-    // 5. Add discount offer
-    if (discount && !response.includes('OFERTA ESPECIAL')) {
-      response += formatDiscountOffer(discount, firmName);
-    }
-    
-    // 6. Add footer
-    response += `\n\n📞 ¿Más dudas? ¡Pregúntame sobre cualquiera de nuestras 7 firmas!`;
-    
-    return response;
-    
-  } catch (error) {
-    console.error('Enhanced response generation error:', error);
-    return 'Lo siento, ocurrió un error. Por favor intenta de nuevo.';
-  }
+  // SIMPLIFIED VERSION: Just apply post-processing to existing response
+  // The main bot already handles FAQ search and response generation
+  // This function will be used for post-processing only
+  return null; // Return null to indicate main bot should handle response generation
 }
 
 // VALIDATION FUNCTIONS
