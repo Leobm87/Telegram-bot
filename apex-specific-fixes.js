@@ -125,6 +125,30 @@ function extractAccountSize(question) {
     return '100000'; // Default to 100K
 }
 
+function formatApexPaymentResponse() {
+    return `🟠 <b>Apex - Métodos de Pago</b>
+
+<b>💳 MÉTODO ACEPTADO:</b>
+• <b>Solo tarjeta de crédito/débito</b>
+
+<b>❌ NO ACEPTAN:</b>
+• Transferencias bancarias
+• PayPal 
+• Wire transfers
+• Otros métodos de pago
+
+<b>💰 Precios:</b>
+• Evaluación: <code>$147-$657</code> (pago único)
+• Cuenta PA: <code>$130-$340</code> único + <code>$85/mes</code> opcional
+
+<b>🔒 Proceso:</b>
+• Pago directo en plataforma Apex
+• Activación inmediata tras pago
+• Sin comisiones adicionales
+
+¿Necesitas info de algún tamaño específico? 🚀`;
+}
+
 function formatApexPlansResponse() {
     return `🟠 <b>Apex Trader Funding</b>
 

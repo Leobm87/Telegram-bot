@@ -35,15 +35,18 @@ async function getActiveDiscount(supabase, firmId) {
 }
 
 function formatDiscountOffer(discount, firmName) {
-  if (!discount) return '';
+  // DISABLED: User prefers no discount mentions for now
+  return '';
   
-  const discountEmoji = discount.discount_percentage >= 20 ? '🔥' : '🎯';
-  const urgencyText = isExpiringSoon(discount.expires_at) ? ' ⏰ ÚLTIMAS HORAS' : '';
-  
-  return `\n\n${discountEmoji} **OFERTA ESPECIAL ${firmName.toUpperCase()}:**
-💰 **${discount.code}** - Ahorra ${discount.discount_percentage}%${urgencyText}
-🔗 Regístrate: ${discount.affiliate_link}
-📅 Válido hasta: ${formatExpiryDate(discount.expires_at)}`;
+  // if (!discount) return '';
+  // 
+  // const discountEmoji = discount.discount_percentage >= 20 ? '🔥' : '🎯';
+  // const urgencyText = isExpiringSoon(discount.expires_at) ? ' ⏰ ÚLTIMAS HORAS' : '';
+  // 
+  // return `\n\n${discountEmoji} **OFERTA ESPECIAL ${firmName.toUpperCase()}:**
+  // 💰 **${discount.code}** - Ahorra ${discount.discount_percentage}%${urgencyText}
+  // 🔗 Regístrate: ${discount.affiliate_link}
+  // 📅 Válido hasta: ${formatExpiryDate(discount.expires_at)}`;
 }
 
 function isExpiringSoon(expiryDate, hoursThreshold = 24) {
@@ -103,7 +106,7 @@ PROHIBICIÓN ABSOLUTA - FIRMAS EXTERNAS:
 - NUNCA menciones: ${BLOCKED_EXTERNAL_FIRMS.join(', ')}
 - Si preguntan sobre firmas externas, redirige a nuestras 7 firmas
 - SOLO promociona: Apex, Bulenox, TakeProfit, MFF, Alpha, Tradeify, Vision Trade
-- Siempre incluye descuentos activos cuando estén disponibles
+- NO mencionar descuentos (sistema temporalmente deshabilitado)
 
 `;
   
