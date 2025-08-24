@@ -40,10 +40,10 @@ class DeterministicRouter {
             
             // PAYOUT-SPECIFIC QUERIES
             payout: {
-                keywords: ['retiro', 'retiros', 'payout', 'profit split', 'comision', 'comisiones', 'ganancias'],
+                keywords: ['retiro', 'retiros', 'payout', 'profit split', 'comision', 'comisiones', 'ganancias', 'metodos', 'metodo', 'retirar', 'dinero', 'withdrawal', 'withdraw'],
                 priority: 8,
                 type: 'payout',
-                subtypes: ['split', 'minimo', 'tiempo', 'metodos']
+                subtypes: ['split', 'minimo', 'tiempo', 'metodos', 'wire', 'ach', 'wise', 'rise', 'swift']
             },
             
             // PLATFORM-SPECIFIC QUERIES
@@ -63,7 +63,7 @@ class DeterministicRouter {
             }
         };
         
-        // Firm-specific drawdown information - READY TO SERVE
+        // Firm-specific information - READY TO SERVE (EXPANDED V2)
         this.firmDrawdownInfo = {
             apex: {
                 title: "🟠 APEX - Reglas de Drawdown",
@@ -115,6 +115,32 @@ class DeterministicRouter {
             }
         };
         
+        // EXPANDED: Firm-specific PAYOUT information - INSTANT RESPONSES
+        this.firmPayoutInfo = {
+            alpha: {
+                title: "🔴 Alpha Futures - Métodos de Retiro",
+                content: `
+💳 **MÉTODOS DISPONIBLES:**
+
+• **ACH (Solo USA):** 1-3 días hábiles, costo bajo
+• **Wire Transfer:** Rápido (mismo/siguiente día), costo mayor, internacional  
+• **SWIFT:** 1-5 días hábiles, fees bancarios, cobertura global
+• **Wise (Digital):** Minutos a horas, fees moderados, global
+• **Rise (Digital):** Procesamiento rápido, requiere acuerdo por email
+
+💰 **CONDICIONES:**
+• Moneda: USD
+• Frecuencia: Cada 14 días
+• Mínimo: $200 por retiro
+• Procesamiento: Máximo 48 horas
+• Primer retiro: Tras 14 días en cuenta fondeada
+
+¿Algo más específico? 🚀
+                `,
+                type: "withdrawal_methods"
+            }
+        };
+        
         this.logger?.info('Deterministic Router initialized', {
             intentPatterns: Object.keys(this.intentPatterns).length,
             firmSupport: Object.keys(this.firmDrawdownInfo).length
@@ -145,10 +171,15 @@ class DeterministicRouter {
         
         this.logger?.info('Query routed', route);
         
-        // Step 4: Generate targeted response if high confidence for drawdown
-        // Lower threshold for drawdown queries since they are very specific
-        if (intent.confidence >= 0.1 && intent.type === 'drawdown' && this.firmDrawdownInfo[detectedFirm]) {
-            return this.generateDrawdownResponse(detectedFirm, normalizedQuestion);
+        // Step 4: Generate targeted responses for specific queries
+        // ULTRA-AGGRESSIVE threshold for immediate deterministic responses
+        if (intent.confidence >= 0.05) {
+            if (intent.type === 'drawdown' && this.firmDrawdownInfo[detectedFirm]) {
+                return this.generateDrawdownResponse(detectedFirm, normalizedQuestion);
+            }
+            if (intent.type === 'payout' && this.firmPayoutInfo[detectedFirm]) {
+                return this.generatePayoutResponse(detectedFirm, normalizedQuestion);
+            }
         }
         
         return { route, shouldCache: true };
@@ -260,6 +291,31 @@ class DeterministicRouter {
         };
         
         this.logger?.info('Generated drawdown response', {
+            firm: firmSlug,
+            type: firmInfo.type,
+            length: response.content.length
+        });
+        
+        return response;
+    }
+    
+    /**
+     * Generate specific payout response
+     */
+    generatePayoutResponse(firmSlug, question) {
+        const firmInfo = this.firmPayoutInfo[firmSlug];
+        if (!firmInfo) return null;
+        
+        const response = {
+            content: `${firmInfo.title}\n\n${firmInfo.content.trim()}`,
+            source: 'deterministic_router',
+            type: 'payout_specific',
+            firm: firmSlug,
+            cached: false,
+            responseTime: Date.now()
+        };
+        
+        this.logger?.info('Generated payout response', {
             firm: firmSlug,
             type: firmInfo.type,
             length: response.content.length

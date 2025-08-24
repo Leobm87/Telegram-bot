@@ -19,11 +19,11 @@ class SmartCacheV2 {
         
         // L1: Exact Match Cache - Instant responses
         this.exactCache = new Map();
-        this.exactCacheTTL = 10 * 60 * 1000; // 10 minutes
+        this.exactCacheTTL = 60 * 60 * 1000; // 60 minutes - EXTENDED for better performance
         
         // L2: Semantic Similarity Cache - Similar questions
         this.semanticCache = new Map();
-        this.semanticCacheTTL = 30 * 60 * 1000; // 30 minutes
+        this.semanticCacheTTL = 120 * 60 * 1000; // 120 minutes - EXTENDED for ultra performance
         
         // L3: Precomputed Cache - Top 100 common queries
         this.precomputedCache = new Map();
@@ -170,7 +170,7 @@ class SmartCacheV2 {
     getSemanticMatch(normalizedQuestion, firmSlug) {
         const questionEmbedding = this.generateQuestionEmbedding(normalizedQuestion);
         let bestMatch = null;
-        let bestSimilarity = 0.6; // Lowered threshold for better matching
+        let bestSimilarity = 0.3; // ULTRA-AGGRESSIVE threshold for immediate cache hits
         
         for (const [key, cached] of this.semanticCache.entries()) {
             // Check TTL
@@ -336,7 +336,8 @@ class SmartCacheV2 {
             'precios', 'precio', 'costo', 'cuanto cuesta',
             'planes', 'cuentas', 'account plans',
             'reglas', 'trading rules', 'drawdown',
-            'retiros', 'payout', 'profit split',
+            'retiros', 'retir', 'payout', 'profit split',
+            'metodos retirar', 'como retirar', 'withdrawal methods',
             'plataformas', 'platforms', 'metatrader',
             'comisiones', 'fees', 'spread',
             'evaluacion', 'challenge', 'funded',
@@ -347,7 +348,13 @@ class SmartCacheV2 {
     
     matchesPattern(question, pattern) {
         const words = pattern.split(' ');
-        return words.some(word => question.includes(word));
+        // ENHANCED: Better matching - must match most words in multi-word patterns
+        if (words.length === 1) {
+            return question.includes(words[0]);
+        } else {
+            const matchedWords = words.filter(word => question.includes(word));
+            return matchedWords.length >= Math.ceil(words.length * 0.6); // 60% of words must match
+        }
     }
     
     getTop100CommonQueries() {
@@ -366,6 +373,16 @@ class SmartCacheV2 {
                 pattern: 'mejor principiante',
                 firm: 'general',
                 response: '🎯 <b>Para Principiantes - Top 3:</b>\n\n1️⃣ <b>🟠 APEX</b> - Pago único, Safety Net\n2️⃣ <b>🔵 BULENOX</b> - Flexible, mensual\n3️⃣ <b>🟢 TAKEPROFIT</b> - Reglas simples\n\n💡 <b>Recomendación:</b> Empieza con cuentas pequeñas ($25K-$50K) para ganar experiencia.\n\n📚 <b>Próximo paso:</b> Estudia las reglas específicas de tu elección.'
+            },
+            {
+                pattern: 'metodos retirar alpha',
+                firm: 'alpha',
+                response: '🔴 <b>Alpha Futures - Métodos de Retiro</b>\n\n💳 <b>MÉTODOS DISPONIBLES:</b>\n\n• <b>ACH (Solo USA):</b> 1-3 días hábiles, costo bajo\n• <b>Wire Transfer:</b> Rápido (mismo/siguiente día), costo mayor, internacional\n• <b>SWIFT:</b> 1-5 días hábiles, fees bancarios, cobertura global\n• <b>Wise (Digital):</b> Minutos a horas, fees moderados, global\n• <b>Rise (Digital):</b> Procesamiento rápido, requiere acuerdo por email\n\n💰 <b>CONDICIONES:</b>\n• Moneda: USD\n• Frecuencia: Cada 14 días\n• Mínimo: $200 por retiro\n• Procesamiento: Máximo 48 horas\n• Primer retiro: Tras 14 días en cuenta fondeada\n\n¿Algo más específico? 🚀'
+            },
+            {
+                pattern: 'retir alpha',
+                firm: 'alpha',
+                response: '🔴 <b>Alpha Futures - Métodos de Retiro</b>\n\n💳 <b>MÉTODOS DISPONIBLES:</b>\n\n• <b>ACH (Solo USA):</b> 1-3 días hábiles, costo bajo\n• <b>Wire Transfer:</b> Rápido (mismo/siguiente día), costo mayor, internacional\n• <b>SWIFT:</b> 1-5 días hábiles, fees bancarios, cobertura global\n• <b>Wise (Digital):</b> Minutos a horas, fees moderados, global\n• <b>Rise (Digital):</b> Procesamiento rápido, requiere acuerdo por email\n\n💰 <b>CONDICIONES:</b>\n• Moneda: USD\n• Frecuencia: Cada 14 días\n• Mínimo: $200 por retiro\n• Procesamiento: Máximo 48 horas\n• Primer retiro: Tras 14 días en cuenta fondeada\n\n¿Algo más específico? 🚀'
             }
             // Add more common queries...
         ];
