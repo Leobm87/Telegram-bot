@@ -41,6 +41,9 @@ const bulenoxFixes = require('./bulenox-specific-fixes');
 // Import SmartCache V2.0 - Performance Engine Component 1
 const SmartCacheV2 = require('./smart-cache-v2');
 
+// Import Deterministic Router - Performance Engine Component 2  
+const DeterministicRouter = require('./deterministic-router');
+
 /**
  * 🎯 PRECISION COMPARATIVE ENGINE - 100% ACCURACY
  * Handles deterministic price and feature comparisons
@@ -266,6 +269,9 @@ class MultiFirmProductionBot {
 
         // SmartCache V2.0 - Performance Engine Component 1 (85% response time improvement)
         this.smartCache = new SmartCacheV2(this.logger);
+        
+        // Deterministic Router - Performance Engine Component 2 (20% additional improvement)
+        this.deterministicRouter = new DeterministicRouter(this.logger);
         
         // Legacy cache for backward compatibility (will be phased out)
         this.cache = new Map();
@@ -637,6 +643,21 @@ Selecciona una prop firm para hacer preguntas específicas:
                 performance: 'OPTIMIZED'
             });
             return cachedResponse;
+        }
+        
+        // 🎯 DETERMINISTIC ROUTER - Check for high-confidence specific responses
+        const routedResponse = this.deterministicRouter.routeQuery(question, firmSlug);
+        if (routedResponse && routedResponse.content) {
+            const responseTime = Date.now() - startTime;
+            this.logger.info('Deterministic Router HIT', { 
+                firm: firmSlug,
+                intent: routedResponse.type,
+                responseTime: `${responseTime}ms`,
+                performance: 'ROUTED'
+            });
+            // Cache the routed response for future queries
+            this.smartCache.set(question, firmSlug, routedResponse.content, { source: 'deterministic_router' });
+            return routedResponse.content;
         }
         
         // Legacy cache check (fallback for transition period)
