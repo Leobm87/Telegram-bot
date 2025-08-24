@@ -1000,12 +1000,13 @@ Responde utilizando toda la información relevante disponible.`;
 
         try {
             const completion = await this.openai.chat.completions.create({
-                model: 'gpt-5-nano',
+                model: 'gpt-4o-mini',
                 messages: [
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userPrompt }
                 ],
-                max_completion_tokens: 800
+                max_tokens: 800,
+                temperature: 0.1
             });
 
             let response = completion.choices[0].message.content;
