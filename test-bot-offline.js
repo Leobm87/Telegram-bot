@@ -104,7 +104,7 @@ class OfflineBotTester {
     // Simulate the core search and response generation
     async simulateQuestion(question) {
         console.log(`\n🔍 TESTING QUESTION: "${question}"`);
-        console.log('=' * 80);
+        console.log('='.repeat(80));
         
         // Step 1: Detect firm
         const firmSlug = this.detectFirmFromQuestion(question);

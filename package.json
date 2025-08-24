@@ -1,7 +1,7 @@
 {
   "name": "eltrader-financiado-bot",
-  "version": "4.0.0",
-  "description": "Multi-firm Telegram bot - 100% precision comparisons + v4.0 engine",
+  "version": "4.3.0",
+  "description": "Multi-firm Telegram bot - v4.3 Phase 1 Fixes + Enhanced Stability",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

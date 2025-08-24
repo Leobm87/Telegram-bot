@@ -32,7 +32,8 @@ const { createClient } = require('@supabase/supabase-js');
 // Winston removed for Railway optimization
 const OpenAI = require('openai');
 
-// Import v4.2 Critical Revenue Fixes
+// Import v4.3 Critical Fixes and Version System
+const VERSION = require('./version');
 const v42Fixes = require('./v42-critical-fixes');
 const apexFixes = require('./apex-specific-fixes');
 const bulenoxFixes = require('./bulenox-specific-fixes');
@@ -1044,7 +1045,7 @@ Responde utilizando toda la información relevante disponible.`;
             firms: Object.keys(this.firms).length,
             cache_size: this.cache.size,
             uptime: Math.round(process.uptime()),
-            version: '4.2.0',
+            version: VERSION.version,
             environment: 'railway_production',
             features: {
                 precision_comparisons: true,

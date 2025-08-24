@@ -5,6 +5,7 @@
 
 const express = require('express');
 const MultiFirmProductionBot = require('./multiFirmProductionBot');
+const VERSION = require('./version');
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -14,17 +15,12 @@ app.use(express.json());
 // Railway health check
 app.get('/', (req, res) => {
     res.json({
-        status: 'ElTrader Bot ONLINE v4.1 - ENHANCED ACCURACY',
-        version: '4.1.0',
+        status: `ElTrader Bot ONLINE v${VERSION.version} - PHASE 1 FIXES`,
+        version: VERSION.version,
         uptime: Math.round(process.uptime()),
         firms: 7,
         bot_status: bot ? 'active' : 'initializing',
-        critical_fixes: [
-            'Monetary formatting fixed ($1,500 not 1500%)',
-            'Enhanced FAQ search with keywords',
-            'Intelligent fallback system',
-            'Standardized response quality'
-        ],
+        phase1_fixes: VERSION.changelog.fixed,
         features: [
             'Offline testing system',
             '100% accuracy validated',
@@ -44,8 +40,8 @@ app.get('/status', (req, res) => {
             server: {
                 uptime: Math.round(process.uptime()),
                 memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
-                version: '4.1.0',
-                improvements: 'Critical fixes deployed'
+                version: VERSION.version,
+                improvements: 'Phase 1 fixes completed'
             },
             ...status
         });
@@ -54,7 +50,7 @@ app.get('/status', (req, res) => {
             bot: 'stopped',
             memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
             timestamp: new Date().toISOString(),
-            version: '4.1.0'
+            version: VERSION.version
         });
     }
 });
