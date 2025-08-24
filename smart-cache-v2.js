@@ -170,7 +170,7 @@ class SmartCacheV2 {
     getSemanticMatch(normalizedQuestion, firmSlug) {
         const questionEmbedding = this.generateQuestionEmbedding(normalizedQuestion);
         let bestMatch = null;
-        let bestSimilarity = 0.3; // ULTRA-AGGRESSIVE threshold for immediate cache hits
+        let bestSimilarity = 0.85; // CONSERVATIVE threshold to prevent false positives
         
         for (const [key, cached] of this.semanticCache.entries()) {
             // Check TTL
@@ -181,6 +181,13 @@ class SmartCacheV2 {
             
             // Check firm match (if specified)
             if (firmSlug && cached.firmSlug !== firmSlug) {
+                continue;
+            }
+            
+            // Check intent type match to prevent cross-contamination
+            const currentIntentType = this.detectIntentType(normalizedQuestion);
+            const cachedIntentType = this.detectIntentType(cached.question);
+            if (currentIntentType !== cachedIntentType) {
                 continue;
             }
             
@@ -257,12 +264,26 @@ class SmartCacheV2 {
     }
     
     generateCacheKey(normalizedQuestion, firmSlug) {
-        const keyString = `${normalizedQuestion}_${firmSlug || 'general'}`;
+        // Add intent type to prevent cross-contamination
+        const intentType = this.detectIntentType(normalizedQuestion);
+        const keyString = `${intentType}_${normalizedQuestion}_${firmSlug || 'general'}`;
         return crypto.createHash('md5').update(keyString).digest('hex');
+    }
+
+    detectIntentType(question) {
+        if (question.match(/precio|costo|cuanto|vale|pagar/)) return 'pricing';
+        if (question.match(/plan|cuenta|account/)) return 'plans'; 
+        if (question.match(/retir|payout|sacar|withdrawal/)) return 'payout';
+        if (question.match(/drawdown|perdida|limite/)) return 'drawdown';
+        if (question.match(/regla|rule|norma/)) return 'rules';
+        if (question.match(/mejor|comparar|diferencia/)) return 'comparison';
+        return 'general';
     }
     
     generateSemanticKey(normalizedQuestion, firmSlug) {
-        const keyString = `semantic_${normalizedQuestion}_${firmSlug || 'general'}`;
+        // Include intent type in semantic key too
+        const intentType = this.detectIntentType(normalizedQuestion);
+        const keyString = `semantic_${intentType}_${normalizedQuestion}_${firmSlug || 'general'}`;
         return crypto.createHash('md5').update(keyString).digest('hex');
     }
     
