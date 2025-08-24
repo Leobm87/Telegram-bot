@@ -170,7 +170,7 @@ class SmartCacheV2 {
     getSemanticMatch(normalizedQuestion, firmSlug) {
         const questionEmbedding = this.generateQuestionEmbedding(normalizedQuestion);
         let bestMatch = null;
-        let bestSimilarity = 0.75; // Minimum similarity threshold
+        let bestSimilarity = 0.6; // Lowered threshold for better matching
         
         for (const [key, cached] of this.semanticCache.entries()) {
             // Check TTL
@@ -267,13 +267,41 @@ class SmartCacheV2 {
     }
     
     generateQuestionEmbedding(question) {
-        // Simple TF-IDF style embedding for semantic similarity
+        // Enhanced semantic embedding for better similarity matching
         const words = question.split(' ');
         const embedding = {};
         
+        // Synonyms for common trading terms
+        const synonyms = {
+            'precio': ['precios', 'costo', 'cuanto', 'cuesta', 'vale'],
+            'cuenta': ['cuentas', 'plan', 'planes', 'account'],
+            'regla': ['reglas', 'rule', 'rules', 'norma', 'normas'],
+            'retiro': ['retiros', 'payout', 'withdrawal', 'sacar'],
+            'comision': ['comisiones', 'fee', 'fees', 'spread'],
+            'apex': ['apex', 'apextraderfunding'],
+            'bulenox': ['bulenox'],
+            'takeprofit': ['takeprofit', 'take', 'profit'],
+            'mff': ['mff', 'myfundedfutures', 'funded', 'futures'],
+            'alpha': ['alpha', 'alphafutures'],
+            'tradeify': ['tradeify'],
+            'vision': ['vision', 'visiontradefutures']
+        };
+        
         words.forEach(word => {
-            if (word.length > 3) { // Skip short words
+            if (word.length > 2) {
+                // Add the word itself
                 embedding[word] = (embedding[word] || 0) + 1;
+                
+                // Add synonyms with reduced weight
+                for (const [baseWord, syns] of Object.entries(synonyms)) {
+                    if (syns.includes(word)) {
+                        syns.forEach(syn => {
+                            embedding[syn] = (embedding[syn] || 0) + 0.8;
+                        });
+                        embedding[baseWord] = (embedding[baseWord] || 0) + 0.9;
+                        break;
+                    }
+                }
             }
         });
         
