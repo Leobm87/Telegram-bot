@@ -106,6 +106,7 @@ class ContextOptimizer {
 
     /**
      * Main optimization method - reduces context based on intent
+     * 🔧 CRITICAL FIX: Add safeguards against over-reduction
      */
     async optimizeContext(question, dbData, firm) {
         const startTime = Date.now();
@@ -120,7 +121,36 @@ class ContextOptimizer {
         // Calculate reduction metrics
         const originalSize = JSON.stringify(dbData).length;
         const optimizedSize = JSON.stringify(optimizedData).length;
-        const reduction = ((originalSize - optimizedSize) / originalSize * 100).toFixed(1);
+        let reduction = ((originalSize - optimizedSize) / originalSize * 100).toFixed(1);
+        
+        // 🔧 CRITICAL SAFEGUARD: Prevent over-reduction
+        const minTokens = 200; // Minimum tokens to retain
+        const estimatedOptimizedTokens = Math.ceil(optimizedSize / 4);
+        
+        if (estimatedOptimizedTokens < minTokens) {
+            this.logger?.warn('Over-reduction detected, falling back to safe filtering', {
+                optimizedTokens: estimatedOptimizedTokens,
+                minRequired: minTokens,
+                originalReduction: `${reduction}%`
+            });
+            
+            // Fallback: use less aggressive filtering
+            const safeData = this.safeFilterData(dbData, intent.type);
+            const safeSize = JSON.stringify(safeData).length;
+            reduction = ((originalSize - safeSize) / originalSize * 100).toFixed(1);
+            
+            return {
+                context: this.buildOptimizedContext(safeData, firm, intent.type),
+                intent: intent.type,
+                reduction: parseFloat(reduction),
+                metrics: {
+                    originalTokens: Math.ceil(originalSize / 4),
+                    optimizedTokens: Math.ceil(safeSize / 4),
+                    time: Date.now() - startTime,
+                    safeguardActivated: true
+                }
+            };
+        }
         
         // Update metrics
         this.updateMetrics(intent.type, reduction);
@@ -149,6 +179,7 @@ class ContextOptimizer {
 
     /**
      * Detect intent from question using keyword matching
+     * 🔧 CRITICAL FIX: Improved intent detection with lower threshold
      */
     detectIntent(question) {
         const lowerQ = question.toLowerCase();
@@ -163,10 +194,18 @@ class ContextOptimizer {
             }
         }
 
-        // If confidence is too low, use general intent
-        if (bestMatch.confidence < 0.1) {
+        // 🔧 CRITICAL: Lower threshold to catch more specific intents
+        // This prevents falling back to over-restrictive 'general' filtering
+        if (bestMatch.confidence < 0.05) {
             bestMatch.type = 'general';
         }
+
+        this.logger?.info('Intent analysis', {
+            question: question.substring(0, 50),
+            detectedIntent: bestMatch.type,
+            confidence: (bestMatch.confidence * 100).toFixed(1) + '%',
+            threshold: '5%'
+        });
 
         return bestMatch;
     }
@@ -219,36 +258,90 @@ class ContextOptimizer {
 
     /**
      * Filter FAQs based on intent relevance
+     * 🔧 CRITICAL FIX: Prevent FAQ over-filtering, ensure content reaches AI
      */
     filterRelevantFAQs(faqs, intentType) {
         const keywords = this.intentPatterns[intentType].keywords;
         
-        return faqs.filter(faq => {
-            const faqText = (faq.question + ' ' + faq.answer).toLowerCase();
+        const relevantFAQs = faqs.filter(faq => {
+            const faqText = (faq.question + ' ' + (faq.answer || faq.answer_md || '')).toLowerCase();
             return keywords.some(keyword => faqText.includes(keyword));
-        }).slice(0, 5); // Limit to top 5 most relevant FAQs
+        });
+        
+        // 🔧 CRITICAL: If not enough relevant FAQs, include some general ones
+        if (relevantFAQs.length < 3) {
+            const additionalFAQs = faqs.filter(faq => !relevantFAQs.includes(faq)).slice(0, 5);
+            return [...relevantFAQs, ...additionalFAQs].slice(0, 8);
+        }
+        
+        return relevantFAQs.slice(0, 8); // Increased from 5 to 8 to retain more content
     }
 
     /**
      * Filter general data when no specific intent is detected
+     * 🔧 CRITICAL FIX: Prevent over-reduction, ensure minimum content retention
      */
     filterGeneralData(dbData) {
         const filtered = {};
         const groupedData = this.groupByTable(dbData);
 
-        // For general queries, include basic info from all tables
+        // For general queries, include basic info from all tables - EXPANDED FIELDS
         const generalFields = {
-            account_plans: ['name', 'account_size', 'evaluation_fee'],
-            trading_rules: ['max_drawdown', 'daily_drawdown'],
-            payout_policies: ['profit_split_phase2', 'payout_frequency'],
-            faqs: ['question', 'answer']
+            account_plans: ['name', 'display_name', 'account_size', 'evaluation_fee', 'price_monthly', 'profit_target', 'drawdown_max', 'drawdown_type'],
+            trading_rules: ['rule_name', 'max_drawdown', 'daily_drawdown', 'value_text', 'value_numeric'],
+            payout_policies: ['policy_name', 'profit_split_phase2', 'payout_frequency', 'minimum_payout', 'description'],
+            faqs: ['question', 'answer', 'answer_md', 'slug']
         };
 
         for (const [table, records] of Object.entries(groupedData)) {
             if (generalFields[table]) {
-                filtered[table] = records.slice(0, 3); // Limit records for general queries
+                // 🔧 CRITICAL: Increase minimum records to prevent content elimination
+                if (table === 'faqs') {
+                    // FAQs are critical - keep more content
+                    filtered[table] = records.slice(0, 8);
+                } else {
+                    // Other data - keep reasonable amount
+                    filtered[table] = records.slice(0, 6);
+                }
             }
         }
+
+        return filtered;
+    }
+
+    /**
+     * Safe fallback filtering when over-reduction is detected
+     * 🔧 CRITICAL: Ensures minimum content always reaches AI
+     */
+    safeFilterData(dbData, intentType) {
+        const filtered = {};
+        const groupedData = this.groupByTable(dbData);
+
+        // Safe filtering - always include essential fields and reasonable content
+        const safeFields = {
+            account_plans: ['display_name', 'account_size', 'price_monthly', 'profit_target', 'drawdown_max', 'drawdown_type', 'phase'],
+            trading_rules: ['rule_name', 'value_text', 'value_numeric', 'phase'],
+            payout_policies: ['policy_name', 'description', 'profit_split_percentage', 'minimum_payout'],
+            faqs: ['question', 'answer_md', 'slug'] // Always include full FAQ content
+        };
+
+        for (const [table, records] of Object.entries(groupedData)) {
+            if (safeFields[table] && records.length > 0) {
+                if (table === 'faqs') {
+                    // FAQs are most important - always include substantial content
+                    filtered[table] = records.slice(0, 10);
+                } else {
+                    // Other tables - include reasonable amount
+                    filtered[table] = records.slice(0, 8);
+                }
+            }
+        }
+
+        this.logger?.info('Safe filtering applied', {
+            originalRecords: dbData.length,
+            safeFilteredTables: Object.keys(filtered).length,
+            contentRetained: 'HIGH_PRIORITY'
+        });
 
         return filtered;
     }
