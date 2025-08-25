@@ -9,7 +9,8 @@
  * - Optimizado para Railway
  */
 
-const UnifiedMultiFirmBot = require('./core/unified-bot');
+const MultiFirmProductionBot = require('./multiFirmProductionBot');
+const express = require('express');
 
 console.log('🚀 INICIANDO EN MODO PRODUCCIÓN...');
 
@@ -17,8 +18,24 @@ console.log('🚀 INICIANDO EN MODO PRODUCCIÓN...');
 // No necesitamos forzar NODE_ENV
 
 try {
-    const bot = new UnifiedMultiFirmBot();
-    bot.start();
+    const bot = new MultiFirmProductionBot();
+    
+    // Express server for Railway health checks
+    const app = express();
+    const PORT = process.env.PORT || 8080;
+    
+    app.get('/', (req, res) => {
+        res.json({ 
+            status: 'online',
+            bot: 'ElTrader Financiado Bot v4.4',
+            firms: 7,
+            environment: 'production'
+        });
+    });
+    
+    app.listen(PORT, () => {
+        console.log(`🌐 Servidor disponible en puerto ${PORT}`);
+    });
     
     // Manejo graceful de shutdown para Railway
     process.on('SIGTERM', () => {
