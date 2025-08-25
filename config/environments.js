@@ -31,6 +31,7 @@ class EnvironmentConfig {
     getConfig() {
         const baseConfig = {
             // Configuración común para todos los ambientes
+            environment: this.environment,
             botName: 'ElTrader Financiado Bot',
             version: '4.3.0',
             maxRetries: 3,
