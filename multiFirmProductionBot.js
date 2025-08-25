@@ -264,7 +264,15 @@ class MultiFirmProductionBot {
             }
         };
 
-        this.bot = new TelegramBot(this.config.telegram.botToken, { polling: true });
+        // Only initialize Telegram bot if token is provided (for production)
+        if (this.config.telegram.botToken) {
+            this.bot = new TelegramBot(this.config.telegram.botToken, { polling: true });
+        } else {
+            // Create a mock bot for testing without Telegram
+            this.bot = null;
+            console.log('⚠️ Running in offline mode - Telegram bot disabled');
+        }
+        
         this.supabase = createClient(this.config.supabase.url, this.config.supabase.serviceKey);
         this.openai = new OpenAI({ apiKey: this.config.openai.apiKey });
         
@@ -348,7 +356,10 @@ class MultiFirmProductionBot {
     }
 
     async initializeBot() {
-        await this.setupEventHandlers();
+        // Only setup event handlers if bot exists (not in offline mode)
+        if (this.bot) {
+            await this.setupEventHandlers();
+        }
         
         // Validate v4.2 fixes are loaded
         const v42Valid = v42Fixes.validateV42Fixes();
@@ -391,6 +402,8 @@ class MultiFirmProductionBot {
     }
 
     async clearAllCommands() {
+        if (!this.bot) return; // Skip if in offline mode
+        
         try {
             // Set only /start command
             await this.bot.setMyCommands([
@@ -970,16 +983,26 @@ ${firmInfo ? `FIRMA: ${firmInfo.name} ${firmInfo.color}` : 'CONSULTA GENERAL'}
 • SOLO recomendar nuestras 7 firmas disponibles
 • Si no tienes info de nuestras firmas, dirígelo a /start
 
-ESTILO DE RESPUESTA - ESTANDARIZADO:
-• ESTRUCTURA: Máximo 8-10 líneas organizadas en bullets
-• PRIORIDAD: FAQ específico → Datos estructurados → Combinación inteligente
-• FORMATO CONSISTENTE: Siempre incluir precios como <code>$XXX</code> (pago único) o <code>$XXX/mes</code> (mensual)
+⚡ ESTILO DE RESPUESTA - ULTRA CONCISO Y ESPECÍFICO:
+• ⛔ MÁXIMO 4-6 LÍNEAS TOTALES: No exceder este límite nunca
+• 🎯 SOLO EL TEMA PREGUNTADO: Si pregunta drawdown → solo drawdown, nada más
+• 🚫 NO AGREGUES: Información extra, contexto adicional, o temas relacionados
+• 📝 ESTRUCTURA: Título + máximo 3-4 bullets con datos específicos
+• 💰 FORMATO: Precios como <code>$XXX</code> (único) o <code>$XXX/mes</code> (mensual)
+• ⚠️ CRÍTICO: Si pregunta por "100K" no mencionar 25K o 50K, solo 100K
+
+REGLAS CRÍTICAS - NO ASUMIR:
+• OVERNIGHT/SWING TRADING: SIEMPRE PROHIBIDO en todas las 7 firmas
+• WEEKEND HOLDING: SIEMPRE PROHIBIDO - cerrar posiciones antes del viernes
+• NEWS TRADING: PROHIBIDO durante eventos de alto impacto
+• Si no tienes datos específicos, busca en FAQs antes de responder genéricamente
 • VALORES MONETARIOS: Siempre formatear como $X,XXX (nunca porcentajes para dinero)
 • SEPARAR FASES: Distinguir claramente Evaluación vs Cuenta PA/Real
 • SAFETY NET: Para Apex, usar umbrales específicos por cuenta (no genérico $500)
 • TONO: Profesional, directo, útil - mismo nivel para todas las firmas
-• COMPLETITUD: Responder la pregunta específica + 1-2 datos adicionales relevantes
-• LLAMADA A ACCIÓN: Siempre terminar sugiriendo más preguntas específicas
+• COMPLETITUD: Responder SOLO la pregunta específica (ej: drawdown → solo % y tipo)  
+• LLAMADA A ACCIÓN: Cierre simple "¿Algo más específico?" sin secciones extra
+• 🚫 PROHIBIDO ABSOLUTO: Secciones de "Información adicional", "También debes saber", contexto extra
 
 FORMATO HTML TELEGRAM:
 • USA <b>texto</b> para negrita (funciona perfecto)

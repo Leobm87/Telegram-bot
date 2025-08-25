@@ -7,6 +7,9 @@
  * 📊 Validates all critical bot improvements v4.1
  */
 
+// Load environment variables
+require('dotenv').config();
+
 const { createClient } = require('@supabase/supabase-js');
 const OpenAI = require('openai');
 

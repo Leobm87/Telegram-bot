@@ -67,50 +67,19 @@ class DeterministicRouter {
         this.firmDrawdownInfo = {
             apex: {
                 title: "🟠 APEX - Reglas de Drawdown",
-                content: `
-📊 **TRAILING DRAWDOWN:**
-• Se congela en balance inicial + $100
-• Ejemplo 50K: trailing para en $50,100
-• Se actualiza con posiciones abiertas hasta alcanzar threshold
-
-📋 **DRAWDOWN POR CUENTA:**
-• $25K: Máx drawdown $1,500
-• $50K: Máx drawdown $2,500  
-• $100K: Máx drawdown $2,750
-• $150K: Máx drawdown $3,000
-• $250K: Máx drawdown $5,000
-• $300K: Máx drawdown $6,500
-
-⚠️ **REGLA 30% PNL NEGATIVO:**
-• Pérdidas abiertas no pueden superar 30% del saldo inicial del día
-• Con Safety Net: usar 30% del Safety Net
-• Al duplicar Safety Net: cambia de 30% a 50%
-
-🛡️ **GESTIÓN DE RIESGO:**
-• Ratio Riesgo/Beneficio máximo: 5:1
-• Stops requeridos (pueden ser mentales)
-• Prohibido usar todo el drawdown como stop
-                `,
+                content: `🟠 <b>Apex Drawdown</b>: Static + Trailing disponibles
+• <b>100K</b>: Máx $2,750 (Static o Trailing) | <b>50K</b>: $2,500 | <b>25K</b>: $1,500
+• <b>Trailing</b>: Se congela en balance inicial + $100
+• <b>Static</b>: Límite fijo desde saldo inicial`,
                 type: "static_trailing"
             },
             
             bulenox: {
                 title: "🔵 BULENOX - Reglas de Drawdown", 
-                content: `
-📊 **OPCIONES DE DRAWDOWN:**
-• **Opción 1**: Trailing Drawdown
-• **Opción 2**: EOD Drawdown (Fin de Día)
-
-💰 **DRAWDOWN POR CUENTA:**
-• Opción 1 (Trailing): Más flexible, ajuste intraday
-• Opción 2 (EOD): Cálculo al cierre del día
-• Ambas opciones disponibles para todas las cuentas
-
-⚡ **CARACTERÍSTICAS:**
-• Drawdown se ajusta según la opción elegida
-• Mayor control de riesgo con trailing
-• EOD para traders que prefieren cálculo diario
-                `,
+                content: `🔵 <b>Bulenox Drawdown</b>: 2 opciones disponibles
+• <b>Opción 1</b>: Trailing (flexible, ajuste intraday)  
+• <b>Opción 2</b>: EOD (cálculo al cierre del día)
+• Ambas disponibles para todas las cuentas`,
                 type: "flexible_options"
             }
         };
@@ -119,24 +88,10 @@ class DeterministicRouter {
         this.firmPayoutInfo = {
             alpha: {
                 title: "🔴 Alpha Futures - Métodos de Retiro",
-                content: `
-💳 **MÉTODOS DISPONIBLES:**
-
-• **ACH (Solo USA):** 1-3 días hábiles, costo bajo
-• **Wire Transfer:** Rápido (mismo/siguiente día), costo mayor, internacional  
-• **SWIFT:** 1-5 días hábiles, fees bancarios, cobertura global
-• **Wise (Digital):** Minutos a horas, fees moderados, global
-• **Rise (Digital):** Procesamiento rápido, requiere acuerdo por email
-
-💰 **CONDICIONES:**
-• Moneda: USD
-• Frecuencia: Cada 14 días
-• Mínimo: $200 por retiro
-• Procesamiento: Máximo 48 horas
-• Primer retiro: Tras 14 días en cuenta fondeada
-
-¿Algo más específico? 🚀
-                `,
+                content: `🔴 <b>Alpha Futures</b>: ACH (USA) | Wire Transfer | SWIFT | Wise | Rise
+• <b>Condiciones</b>: Cada 14 días, mín $200, máx 48h procesamiento
+• <b>Digital</b>: Wise (minutos-horas) | Rise (rápido, requiere email)
+• <b>Tradicional</b>: ACH (1-3 días) | Wire/SWIFT (mismo/siguiente día)`,
                 type: "withdrawal_methods"
             }
         };
